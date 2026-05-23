@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="1120" viewBox="0 0 1180 1120" role="img" aria-labelledby="title desc">
+  <title id="title">AFML Chapter 3 XAUUSD labeling experiment map</title>
+  <desc id="desc">High-level map of completed labeling, meta-labeling, timeframe, parameter sweep, and multi-timeframe barrier experiments.</desc>
+  <defs>
+    <style>
+      text {
+        font-family: "DejaVu Sans", "Noto Sans", Arial, sans-serif;
+        letter-spacing: 0;
+      }
+      .bg { fill: #f7f8fa; }
+      .panel { fill: #fff; stroke: #d7dde5; stroke-width: 1.4; }
+      .soft { fill: #fbfcfd; stroke: #e0e6ee; stroke-width: 1; }
+      .title { fill: #1b2430; font-size: 30px; font-weight: 700; }
+      .subtitle { fill: #526070; font-size: 15px; }
+      .h2 { fill: #1b2430; font-size: 20px; font-weight: 700; }
+      .h3 { fill: #2b3645; font-size: 14px; font-weight: 700; }
+      .body { fill: #344154; font-size: 13px; }
+      .small { fill: #526070; font-size: 11px; }
+      .metric { fill: #1b2430; font-size: 22px; font-weight: 700; }
+      .green { fill: #2f9e6d; }
+      .red { fill: #d95f5f; }
+      .gray { fill: #8a96a6; }
+      .blue { fill: #4078c0; }
+      .amber { fill: #c58a2a; }
+      .greenText { fill: #2f9e6d; font-size: 13px; font-weight: 700; }
+      .redText { fill: #d95f5f; font-size: 13px; font-weight: 700; }
+      .axis { stroke: #c7d0dc; stroke-width: 1.2; }
+      .grid { stroke: #eef2f6; stroke-width: 1; }
+      .arrow { stroke: #b8c2cf; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .pill { fill: #eef2f6; stroke: #d7dde5; stroke-width: 1; }
+    </style>
+    <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#b8c2cf" />
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1180" height="1120" />
+
+  <text x="44" y="56" class="title">AFML Ch03 XAUUSD Labeling Experiment Map</text>
+  <text x="44" y="82" class="subtitle">Completed baseline labeling, meta-labeling checks, timeframe checks, parameter sweeps, and M5-event/M1-path validation.</text>
+
+  <rect x="44" y="118" width="1092" height="116" rx="8" class="panel" />
+  <text x="68" y="152" class="h2">Main conclusion</text>
+  <text x="68" y="181" class="body">The labeling pipeline is usable. EMA and BB meta-labeling do not survive majority-baseline walk-forward checks.</text>
+  <text x="68" y="207" class="body">Most practical next label candidate: M5 event with M1 close path, pt/sl=[0.5,0.5], vertical barrier 4h or 1d.</text>
+
+  <rect x="44" y="270" width="330" height="190" rx="8" class="panel" />
+  <text x="68" y="304" class="h2">1. AFML Ch03 baseline</text>
+  <text x="68" y="334" class="body">M1 triple barrier [1,1], 1d</text>
+  <text x="68" y="372" class="metric">4,797</text>
+  <text x="68" y="392" class="small">labeled events</text>
+  <text x="196" y="372" class="metric">33m</text>
+  <text x="196" y="392" class="small">median hold</text>
+  <text x="68" y="430" class="greenText">Balanced labels: -1 2,310 / +1 2,487</text>
+
+  <rect x="424" y="270" width="330" height="190" rx="8" class="panel" />
+  <text x="448" y="304" class="h2">2. Meta-labeling checks</text>
+  <text x="448" y="334" class="body">EMA 20/50 and BB reversion</text>
+  <text x="448" y="372" class="metric">0 / 4</text>
+  <text x="448" y="392" class="small">positive-edge folds</text>
+  <text x="576" y="372" class="metric">Rejected</text>
+  <text x="576" y="392" class="small">vs majority baseline</text>
+  <text x="448" y="424" class="redText">Do not extend meta-labeling</text>
+  <text x="448" y="444" class="redText">until the primary signal improves.</text>
+
+  <rect x="806" y="270" width="330" height="190" rx="8" class="panel" />
+  <text x="830" y="304" class="h2">3. Timeframe check</text>
+  <text x="830" y="334" class="body">M5 close-path labeling</text>
+  <text x="830" y="372" class="metric">878</text>
+  <text x="830" y="392" class="small">M5 labels</text>
+  <text x="948" y="372" class="metric">190m</text>
+  <text x="948" y="392" class="small">median hold</text>
+  <text x="830" y="430" class="body">Geometry changes, but meta-model still fails.</text>
+
+  <path d="M374 365 H424" class="arrow" />
+  <path d="M754 365 H806" class="arrow" />
+
+  <rect x="44" y="500" width="524" height="248" rx="8" class="panel" />
+  <text x="68" y="534" class="h2">4. Triple-barrier sweep</text>
+  <text x="68" y="562" class="body">M1/M5, pt/sl grid, 30m/1h/4h/1d vertical barriers.</text>
+  <line x1="68" y1="586" x2="544" y2="586" class="axis" />
+  <text x="76" y="616" class="h3">Candidate</text>
+  <text x="272" y="616" class="h3">+ Rate</text>
+  <text x="348" y="616" class="h3">t1</text>
+  <text x="420" y="616" class="h3">Median</text>
+
+  <line x1="68" y1="632" x2="544" y2="632" class="grid" />
+  <text x="76" y="656" class="body">M1 [1,1], 4h</text>
+  <text x="272" y="656" class="body">51.7%</text>
+  <text x="348" y="656" class="body">9.7%</text>
+  <text x="420" y="656" class="body">34m</text>
+
+  <line x1="68" y1="672" x2="544" y2="672" class="grid" />
+  <text x="76" y="696" class="body">M5 [0.5,0.5], 4h</text>
+  <text x="272" y="696" class="body">53.3%</text>
+  <text x="348" y="696" class="body">9.8%</text>
+  <text x="420" y="696" class="body">45m</text>
+
+  <line x1="68" y1="712" x2="544" y2="712" class="grid" />
+  <text x="76" y="736" class="body">M5 [1,1], 1d</text>
+  <text x="272" y="736" class="body">52.5%</text>
+  <text x="348" y="736" class="body">6.1%</text>
+  <text x="420" y="736" class="body">188m</text>
+
+  <rect x="612" y="500" width="524" height="248" rx="8" class="panel" />
+  <text x="636" y="534" class="h2">5. M5 event + M1 close path</text>
+  <text x="636" y="562" class="body">Entry price from M5 close. Barrier path from M1 close.</text>
+  <line x1="636" y1="586" x2="1112" y2="586" class="axis" />
+  <text x="644" y="616" class="h3">Candidate</text>
+  <text x="844" y="616" class="h3">+ Rate</text>
+  <text x="920" y="616" class="h3">t1</text>
+  <text x="990" y="616" class="h3">Median</text>
+
+  <line x1="636" y1="632" x2="1112" y2="632" class="grid" />
+  <text x="644" y="656" class="body">[0.5,0.5], 4h</text>
+  <text x="844" y="656" class="body">51.6%</text>
+  <text x="920" y="656" class="body">8.9%</text>
+  <text x="990" y="656" class="body">35m</text>
+
+  <line x1="636" y1="672" x2="1112" y2="672" class="grid" />
+  <text x="644" y="696" class="body">[0.5,0.5], 1d</text>
+  <text x="844" y="696" class="body">51.3%</text>
+  <text x="920" y="696" class="body">0.8%</text>
+  <text x="990" y="696" class="body">35m</text>
+
+  <line x1="636" y1="712" x2="1112" y2="712" class="grid" />
+  <text x="644" y="736" class="body">[1,1], 1d</text>
+  <text x="844" y="736" class="body">52.5%</text>
+  <text x="920" y="736" class="body">5.1%</text>
+  <text x="990" y="736" class="body">153m</text>
+
+  <rect x="44" y="788" width="1092" height="184" rx="8" class="panel" />
+  <text x="68" y="822" class="h2">Rejected model checks</text>
+  <text x="68" y="850" class="body">These were useful diagnostics, but none produced a validated edge over the majority baseline.</text>
+
+  <rect x="68" y="878" width="316" height="66" rx="6" class="soft" />
+  <text x="92" y="904" class="h3">EMA meta-labeling</text>
+  <text x="92" y="928" class="body">M1 WF edge -0.114, M5 WF edge -0.075</text>
+
+  <rect x="432" y="878" width="316" height="66" rx="6" class="soft" />
+  <text x="456" y="904" class="h3">BB mean-reversion</text>
+  <text x="456" y="928" class="body">M1 WF edge -0.128, M5 WF edge -0.119</text>
+
+  <rect x="796" y="878" width="316" height="66" rx="6" class="soft" />
+  <text x="820" y="904" class="h3">Full-window traps</text>
+  <text x="820" y="928" class="body">Some AUCs improve, but fail walk-forward.</text>
+
+  <rect x="44" y="1012" width="1092" height="88" rx="8" class="panel" />
+  <text x="68" y="1044" class="h2">Recommended next project</text>
+  <text x="68" y="1070" class="body">Move from Ch03 study to execution validation.</text>
+  <text x="68" y="1090" class="body">Next: M5 event + M1 high/low path, then spread/slippage/cost-aware barriers.</text>
+</svg>

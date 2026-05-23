@@ -1,0 +1,66 @@
+import pandas as pd
+
+from deepfx_alpha_lab.labeling import add_vertical_barrier, get_bins, get_events, symmetric_cusum_filter
+
+
+def test_symmetric_cusum_filter_samples_large_moves():
+    index = pd.date_range("2026-01-01", periods=5, freq="min")
+    close = pd.Series([100.0, 100.1, 101.5, 101.4, 99.0], index=index)
+
+    events = symmetric_cusum_filter(close, threshold=0.01)
+
+    assert list(events) == [index[2], index[4]]
+
+
+def test_triple_barrier_labels_first_profit_taking_touch():
+    index = pd.date_range("2026-01-01", periods=5, freq="min")
+    close = pd.Series([100.0, 100.2, 101.2, 100.8, 100.7], index=index)
+    t_events = pd.DatetimeIndex([index[0]])
+    t1 = pd.Series(index[-1], index=t_events)
+    trgt = pd.Series(0.01, index=t_events)
+
+    events = get_events(close, t_events, [1, 1], trgt, min_ret=0.0, t1=t1)
+    bins = get_bins(close, events)
+
+    assert events.loc[index[0], "type"] == "pt"
+    assert bins.loc[index[0], "bin"] == 1
+
+
+def test_vertical_barrier_can_be_labeled_zero():
+    index = pd.date_range("2026-01-01", periods=5, freq="min")
+    close = pd.Series([100.0, 100.1, 100.2, 100.3, 100.4], index=index)
+    t_events = pd.DatetimeIndex([index[0]])
+    t1 = pd.Series(index[-1], index=t_events)
+    trgt = pd.Series(0.10, index=t_events)
+
+    events = get_events(close, t_events, [1, 1], trgt, min_ret=0.0, t1=t1)
+    bins = get_bins(close, events, zero_on_vertical=True)
+
+    assert events.loc[index[0], "type"] == "t1"
+    assert bins.loc[index[0], "bin"] == 0
+
+
+def test_meta_labeling_uses_side_adjusted_returns():
+    index = pd.date_range("2026-01-01", periods=4, freq="min")
+    close = pd.Series([100.0, 99.5, 99.0, 98.8], index=index)
+    t_events = pd.DatetimeIndex([index[0]])
+    t1 = pd.Series(index[-1], index=t_events)
+    trgt = pd.Series(0.005, index=t_events)
+    side = pd.Series(-1, index=t_events)
+
+    events = get_events(close, t_events, [1, 2], trgt, min_ret=0.0, t1=t1, side=side)
+    bins = get_bins(close, events)
+
+    assert events.loc[index[0], "type"] == "pt"
+    assert bins.loc[index[0], "ret"] > 0
+    assert bins.loc[index[0], "bin"] == 1
+
+
+def test_add_vertical_barrier_uses_first_index_after_horizon():
+    index = pd.to_datetime(["2026-01-01 00:00", "2026-01-01 12:00", "2026-01-02 00:01"])
+    close = pd.Series([1.0, 1.1, 1.2], index=index)
+    t_events = pd.DatetimeIndex([index[0]])
+
+    barriers = add_vertical_barrier(t_events, close, num_days=1)
+
+    assert barriers.loc[index[0]] == index[2]

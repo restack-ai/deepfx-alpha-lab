@@ -701,9 +701,11 @@ Run:
 
 ```bash
 just afml-kronos-tb-labeler
+just afml-kronos-tb-labeler-multisymbol
+just afml-kronos-tb-labeler-7symbols
 ```
 
-Default outputs:
+Default single-symbol outputs:
 
 ```text
 data/processed/afml/ch03/kronos/kronos_tb_labeler_xauusd_m15_m1_ohlc_pt05_sl05_8h_202601_202605.npz
@@ -741,7 +743,9 @@ tick_volume is log-scaled by the window median volume.
 return_1 is kept as a stationary return feature.
 ```
 
-Latest MVP dataset:
+Latest MVP datasets:
+
+Single-symbol XAUUSD:
 
 ```text
 event rows: 7947
@@ -755,11 +759,47 @@ bin distribution: {-1: 123, 1: 148}
 skipped for lookback: 0
 ```
 
+Four-symbol live-strategy expansion (`XAUUSD,XAGUSD,NAS100,US30`):
+
+```text
+dataset rows: 1046
+x shape: [1046, 96, 6]
+label type distribution: {pt: 493, sl: 423, t1: 130}
+bin distribution: {-1: 481, 1: 565}
+failed symbols: []
+
+per symbol rows:
+- XAUUSD: 271
+- XAGUSD: 308
+- NAS100: 247
+- US30: 220
+```
+
+Seven-symbol research expansion (`XAUUSD,XAGUSD,NAS100,US30,EURUSD,GBPUSD,USDJPY`):
+
+```text
+dataset rows: 1885
+x shape: [1885, 96, 6]
+label type distribution: {pt: 876, sl: 799, t1: 210}
+bin distribution: {-1: 887, 1: 998}
+failed symbols: []
+
+per symbol rows:
+- XAUUSD: 271
+- XAGUSD: 308
+- NAS100: 247
+- US30: 220
+- EURUSD: 275
+- GBPUSD: 273
+- USDJPY: 291
+```
+
 Interpretation:
 
 ```text
-This is enough for an MVP data contract and a tiny baseline classifier, but not enough for a serious Kronos fine-tune by itself.
-The next step should be either multi-symbol expansion or a frozen-Kronos embedding/classifier baseline rather than immediate full fine-tuning.
+The 4-symbol dataset is the cleaner DeepFX live-strategy MVP target set.
+The 7-symbol dataset gives more samples for representation experiments, but mixes metals, indices, and FX majors.
+This is now large enough for frozen-Kronos embedding + small classifier baselines, but still small for full fine-tuning.
 ```
 
 ## Notes

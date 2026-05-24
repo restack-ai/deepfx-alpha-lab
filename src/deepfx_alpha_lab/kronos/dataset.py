@@ -11,6 +11,50 @@ ID_TO_LABEL_TYPE = {value: key for key, value in LABEL_TYPE_TO_ID.items()}
 DEFAULT_FEATURE_COLUMNS = ["open", "high", "low", "close", "tick_volume", "return_1"]
 
 
+def concatenate_kronos_label_datasets(items: list[tuple[str, KronosLabelDataset]]) -> KronosLabelDataset:
+    """Concatenate per-symbol Kronos datasets and keep symbol metadata."""
+    non_empty = [(symbol, dataset) for symbol, dataset in items if len(dataset.y_type) > 0]
+    if not non_empty:
+        return KronosLabelDataset(
+            x=np.empty((0, 0, 0), dtype="float32"),
+            y_type=np.array([], dtype="int64"),
+            y_bin=np.array([], dtype="int64"),
+            y_ret=np.array([], dtype="float32"),
+            event_times=pd.DatetimeIndex([]),
+            feature_columns=[],
+            metadata=pd.DataFrame(),
+        )
+
+    feature_columns = non_empty[0][1].feature_columns
+    for symbol, dataset in non_empty:
+        if dataset.feature_columns != feature_columns:
+            raise ValueError(f"feature column mismatch for {symbol}")
+
+    x = np.concatenate([dataset.x for _, dataset in non_empty], axis=0).astype("float32")
+    y_type = np.concatenate([dataset.y_type for _, dataset in non_empty]).astype("int64")
+    y_bin = np.concatenate([dataset.y_bin for _, dataset in non_empty]).astype("int64")
+    y_ret = np.concatenate([dataset.y_ret for _, dataset in non_empty]).astype("float32")
+    event_times = pd.DatetimeIndex([ts for _, dataset in non_empty for ts in dataset.event_times])
+    metadata_frames: list[pd.DataFrame] = []
+    for symbol, dataset in non_empty:
+        metadata = dataset.metadata.copy()
+        metadata["symbol"] = symbol
+        metadata_frames.append(metadata)
+    metadata_all = pd.concat(metadata_frames)
+    # Keep a deterministic temporal order across symbols. For duplicate timestamps,
+    # numpy's stable sort preserves the input symbol order.
+    order = np.argsort(event_times.to_numpy(), kind="stable")
+    return KronosLabelDataset(
+        x=x[order],
+        y_type=y_type[order],
+        y_bin=y_bin[order],
+        y_ret=y_ret[order],
+        event_times=pd.DatetimeIndex(event_times.to_numpy()[order]),
+        feature_columns=list(feature_columns),
+        metadata=metadata_all.iloc[order],
+    )
+
+
 @dataclass(frozen=True)
 class KronosLabelDataset:
     x: np.ndarray

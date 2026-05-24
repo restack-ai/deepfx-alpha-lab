@@ -44,31 +44,33 @@ Done:
 - M5 event + M1 OHLC execution-aware barrier sweep
 - M15/H1 event-timeframe comparison with M1 OHLC execution-aware path
 - Kronos Triple Barrier Labeler MVP dataset builder
+- multi-symbol Kronos dataset expansion for 4 live-strategy symbols and 7 research symbols
 
 Current interpretation:
 - Label geometry is usable as a research foundation.
 - EMA/BB primary + RandomForest meta-labeling is rejected as an edge candidate.
 - M15 event + M1 OHLC path is the strongest near-term Kronos target candidate for the H1/M15 discretionary workflow.
 - H1 event + M1 OHLC path is clean but sample-starved on the current dataset, so use it as a comparison/regime target until more history is available.
-- The first Kronos MVP now exports fixed-window supervised datasets; current XAUUSD-only sample is enough for data contract validation, not serious fine-tuning.
+- The Kronos MVP now exports fixed-window supervised datasets for multiple symbols.
+- The 4-symbol live-strategy set has 1046 rows; the 7-symbol research set has 1885 rows.
 ```
 
 Recommended next step:
 
 ```text
-Expand the Kronos Triple Barrier Labeler MVP beyond single-symbol XAUUSD.
+Build a frozen-Kronos embedding + small classifier baseline before attempting full fine-tuning.
 
-Preferred expansion:
-- symbols: XAUUSD, XAGUSD, NAS100, US30 where clean M15/M1 OHLC history exists
+Preferred target:
+- symbols: start with XAUUSD, XAGUSD, NAS100, US30
 - event timeframe: M15
 - path timeframe: M1 OHLC
 - pt/sl: [0.5, 0.5]
-- vertical barrier: 8h or 1d
+- vertical barrier: 8h
 - ambiguity policy: sl_first
 
 Reason:
-The MVP data contract is now in place, but the current XAUUSD-only dataset has only ~271 events.
-Before full Kronos fine-tuning, increase label coverage or use frozen-Kronos embeddings with a small classifier.
+The multi-symbol dataset is now large enough for a baseline classifier experiment.
+It is still small for full Kronos fine-tuning, so use frozen embeddings or a small tabular/sequence baseline first.
 ```
 
 ---

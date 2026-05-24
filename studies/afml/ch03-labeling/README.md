@@ -614,6 +614,72 @@ No same-bar ambiguous touches appeared in the default grid, so conservative sl_f
 The best execution-aware baseline remains M5 event + M1 OHLC path with [0.5,0.5] and a 4h or 1d vertical barrier.
 ```
 
+### M15/H1 Event-Timeframe Comparison
+
+This experiment keeps M1 OHLC execution-aware path resolution, but changes the event timeframe to match the intended H1/M15 discretionary workflow more closely.
+
+Run examples:
+
+```bash
+python studies/afml/ch03-labeling/scripts/08_mtf_ohlc_barrier_sweep.py \
+  --event-timeframe M15 \
+  --path-timeframe M1 \
+  --pt-sl-grid "0.5,0.5;1.0,1.0;1.5,1.5" \
+  --num-days-grid "0.1666666667,0.3333333333,1.0"
+
+python studies/afml/ch03-labeling/scripts/08_mtf_ohlc_barrier_sweep.py \
+  --event-timeframe H1 \
+  --path-timeframe M1 \
+  --pt-sl-grid "0.5,0.5;1.0,1.0;1.5,1.5" \
+  --num-days-grid "0.1666666667,0.3333333333,1.0" \
+  --min-daily-bars 12
+```
+
+H1 note:
+
+```text
+The generic sparse-day filter default is 60 bars/day, which is appropriate for M1/M5/M15 but filters out H1 days.
+Use --min-daily-bars 12 for H1 event sweeps.
+```
+
+M15 result:
+
+| Event TF | Path TF | pt  | sl  | t1 | Events | + Rate | pt Rate | sl Rate | t1 Rate | Median Hold |
+| -------- | ------- | --: | --: | --: | -----: | -----: | ------: | ------: | ------: | ----------: |
+| M15 | M1 | 0.5 | 0.5 | 4h | 269 | 53.9% | 40.9% | 32.0% | 27.1% | 85 min |
+| M15 | M1 | 1.0 | 1.0 | 4h | 269 | 53.2% | 19.7% | 18.2% | 62.1% | 241 min |
+| M15 | M1 | 1.5 | 1.5 | 4h | 269 | 54.3% | 7.8% | 7.1% | 85.1% | 241 min |
+| M15 | M1 | 0.5 | 0.5 | 8h | 269 | 53.9% | 48.0% | 40.9% | 11.2% | 85 min |
+| M15 | M1 | 1.0 | 1.0 | 8h | 269 | 52.4% | 27.1% | 27.1% | 45.7% | 408 min |
+| M15 | M1 | 1.5 | 1.5 | 8h | 269 | 55.0% | 13.8% | 13.4% | 72.9% | 480 min |
+| M15 | M1 | 0.5 | 0.5 | 1d | 268 | 53.7% | 52.6% | 44.8% | 2.6% | 86 min |
+| M15 | M1 | 1.0 | 1.0 | 1d | 268 | 50.0% | 42.5% | 39.9% | 17.5% | 408 min |
+| M15 | M1 | 1.5 | 1.5 | 1d | 268 | 56.0% | 32.8% | 25.0% | 42.2% | 1193 min |
+
+H1 result:
+
+| Event TF | Path TF | pt  | sl  | t1 | Events | + Rate | pt Rate | sl Rate | t1 Rate | Median Hold |
+| -------- | ------- | --: | --: | --: | -----: | -----: | ------: | ------: | ------: | ----------: |
+| H1 | M1 | 0.5 | 0.5 | 4h | 129 | 51.2% | 34.1% | 33.3% | 32.6% | 127 min |
+| H1 | M1 | 1.0 | 1.0 | 4h | 129 | 48.8% | 5.4% | 12.4% | 82.2% | 241 min |
+| H1 | M1 | 1.5 | 1.5 | 4h | 129 | 48.8% | 1.6% | 3.9% | 94.6% | 241 min |
+| H1 | M1 | 0.5 | 0.5 | 8h | 129 | 51.9% | 38.8% | 40.3% | 20.9% | 127 min |
+| H1 | M1 | 1.0 | 1.0 | 8h | 129 | 48.1% | 13.2% | 23.3% | 63.6% | 480 min |
+| H1 | M1 | 1.5 | 1.5 | 8h | 129 | 50.4% | 3.1% | 8.5% | 88.4% | 480 min |
+| H1 | M1 | 0.5 | 0.5 | 1d | 129 | 50.4% | 45.7% | 46.5% | 7.8% | 127 min |
+| H1 | M1 | 1.0 | 1.0 | 1d | 129 | 47.3% | 31.0% | 35.7% | 33.3% | 968 min |
+| H1 | M1 | 1.5 | 1.5 | 1d | 129 | 51.9% | 13.2% | 20.9% | 65.9% | 1440 min |
+
+Interpretation:
+
+```text
+M15 gives about 2x the H1 event count while staying closer to the real H1/M15 trading workflow than M5 events.
+For practical Kronos labeling, M15 [0.5,0.5] with 8h or 1d vertical is the strongest near-term target candidate.
+M15 [1,1] with 1d is perfectly balanced, but the 408-minute median hold is a slower regime label rather than an execution label.
+H1 event labels are clean and well-balanced, but only 129 events are available in this sample, so H1 is better as a comparison/regime target until more history is available.
+Large H1 barriers with short 4h/8h vertical horizons are timeout-heavy and should not be used as the first Kronos MVP target.
+```
+
 ## Notes
 
 - `getBins` uses the standard AFML-style directional label for vertical barrier exits in Exercise 3.1.

@@ -118,6 +118,12 @@ afml-mtf-sweep: check-clickhouse
 afml-mtf-ohlc-sweep: check-clickhouse
     {{python}} studies/afml/ch03-labeling/scripts/08_mtf_ohlc_barrier_sweep.py
 
+afml-mtf-ohlc-sweep-m15: check-clickhouse
+    {{python}} studies/afml/ch03-labeling/scripts/08_mtf_ohlc_barrier_sweep.py --event-timeframe M15 --path-timeframe M1 --pt-sl-grid "0.5,0.5;1.0,1.0;1.5,1.5" --num-days-grid "0.1666666667,0.3333333333,1.0"
+
+afml-mtf-ohlc-sweep-h1: check-clickhouse
+    {{python}} studies/afml/ch03-labeling/scripts/08_mtf_ohlc_barrier_sweep.py --event-timeframe H1 --path-timeframe M1 --pt-sl-grid "0.5,0.5;1.0,1.0;1.5,1.5" --num-days-grid "0.1666666667,0.3333333333,1.0" --min-daily-bars 12
+
 afml-mtf-sweep-clean:
     rm -f data/processed/afml/ch03/mtf_barrier_sweep_*.csv
     rm -f data/processed/afml/ch03/mtf_barrier_sweep_*.json

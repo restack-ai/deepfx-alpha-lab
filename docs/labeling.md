@@ -42,21 +42,29 @@ Done:
 - triple-barrier parameter sweeps
 - M5 event + M1 close-path barrier sweep
 - M5 event + M1 OHLC execution-aware barrier sweep
+- M15/H1 event-timeframe comparison with M1 OHLC execution-aware path
 
 Current interpretation:
 - Label geometry is usable as a research foundation.
 - EMA/BB primary + RandomForest meta-labeling is rejected as an edge candidate.
-- Execution-aware OHLC labels are now available and should be the default target candidate for Kronos labeling MVP work.
+- M15 event + M1 OHLC path is the strongest near-term Kronos target candidate for the H1/M15 discretionary workflow.
+- H1 event + M1 OHLC path is clean but sample-starved on the current dataset, so use it as a comparison/regime target until more history is available.
 ```
 
 Recommended next step:
 
 ```text
-Build MVP 1: Kronos Triple Barrier Labeler on top of execution-aware OHLC labels.
+Build MVP 1: Kronos Triple Barrier Labeler on top of M15 event + M1 OHLC execution-aware labels.
+
+Preferred first target:
+- event timeframe: M15
+- path timeframe: M1 OHLC
+- pt/sl: [0.5, 0.5]
+- vertical barrier: 8h or 1d
+- ambiguity policy: sl_first
 
 Reason:
-The labeling layer now models intrabar high/low TP/SL touches with conservative same-bar ambiguity handling.
-Kronos should learn these execution-aware labels instead of softer close-path labels.
+This keeps the label close to the actual H1/M15 trading workflow while retaining roughly 2x more events than H1 labels in the current sample.
 ```
 
 ---

@@ -45,6 +45,7 @@ Done:
 - M15/H1 event-timeframe comparison with M1 OHLC execution-aware path
 - Kronos Triple Barrier Labeler MVP dataset builder
 - multi-symbol Kronos dataset expansion for 4 live-strategy symbols and 7 research symbols
+- statistical embedding classifier baseline for Kronos labeler targets
 
 Current interpretation:
 - Label geometry is usable as a research foundation.
@@ -53,12 +54,13 @@ Current interpretation:
 - H1 event + M1 OHLC path is clean but sample-starved on the current dataset, so use it as a comparison/regime target until more history is available.
 - The Kronos MVP now exports fixed-window supervised datasets for multiple symbols.
 - The 4-symbol live-strategy set has 1046 rows; the 7-symbol research set has 1885 rows.
+- Statistical window embeddings with RandomForest beat majority baseline modestly on both sets; this is a label-prediction sanity check, not a trading edge.
 ```
 
 Recommended next step:
 
 ```text
-Build a frozen-Kronos embedding + small classifier baseline before attempting full fine-tuning.
+Wire a real frozen Kronos encoder and rerun the same classifier protocol.
 
 Preferred target:
 - symbols: start with XAUUSD, XAGUSD, NAS100, US30
@@ -69,8 +71,8 @@ Preferred target:
 - ambiguity policy: sl_first
 
 Reason:
-The multi-symbol dataset is now large enough for a baseline classifier experiment.
-It is still small for full Kronos fine-tuning, so use frozen embeddings or a small tabular/sequence baseline first.
+The statistical embedding baseline provides a floor: RF accuracy edge is +4.1pp on the 4-symbol set and +9.0pp on the 7-symbol set.
+A frozen Kronos encoder should be compared against this exact protocol before any full fine-tuning.
 ```
 
 ---

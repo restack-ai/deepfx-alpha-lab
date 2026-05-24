@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 from deepfx_alpha_lab.kronos import build_kronos_label_dataset, concatenate_kronos_label_datasets
+from deepfx_alpha_lab.kronos.baseline import build_statistical_embeddings, time_ordered_split
 
 
 def test_build_kronos_label_dataset_creates_fixed_windows_and_multiclass_targets():
@@ -97,3 +98,24 @@ def test_concatenate_kronos_label_datasets_keeps_symbol_metadata():
     assert combined.y_type.tolist() == [0, 1]
     assert combined.metadata["symbol"].tolist() == ["XAUUSD", "NAS100"]
     assert combined.metadata.index.tolist() == [index[3], index[4]]
+
+
+def test_build_statistical_embeddings_extracts_per_feature_summary_stats():
+    x = np.arange(2 * 4 * 3, dtype="float32").reshape(2, 4, 3)
+
+    embeddings, columns = build_statistical_embeddings(x, feature_columns=["a", "b", "c"])
+
+    assert embeddings.shape == (2, 12)
+    assert columns[:4] == ["a_mean", "a_std", "a_last", "a_slope"]
+    np.testing.assert_allclose(embeddings[0, 0], x[0, :, 0].mean())
+    np.testing.assert_allclose(embeddings[0, 2], x[0, -1, 0])
+    np.testing.assert_allclose(embeddings[0, 3], x[0, -1, 0] - x[0, 0, 0])
+
+
+def test_time_ordered_split_preserves_temporal_order():
+    event_times = pd.date_range("2026-01-01", periods=10, freq="h")
+
+    train_idx, test_idx = time_ordered_split(event_times, train_frac=0.7)
+
+    assert train_idx.tolist() == list(range(7))
+    assert test_idx.tolist() == list(range(7, 10))

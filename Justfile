@@ -133,6 +133,9 @@ afml-kronos-tb-labeler-multisymbol: check-clickhouse
 afml-kronos-tb-labeler-7symbols: check-clickhouse
     {{python}} studies/afml/ch03-labeling/scripts/09_kronos_tb_labeler_dataset.py --symbols XAUUSD,XAGUSD,NAS100,US30,EURUSD,GBPUSD,USDJPY --run-name 7symbols_m15_m1_ohlc_pt05_sl05_8h
 
+afml-kronos-tb-baseline:
+    {{python}} studies/afml/ch03-labeling/scripts/10_kronos_tb_labeler_baseline.py
+
 afml-mtf-sweep-clean:
     rm -f data/processed/afml/ch03/mtf_barrier_sweep_*.csv
     rm -f data/processed/afml/ch03/mtf_barrier_sweep_*.json

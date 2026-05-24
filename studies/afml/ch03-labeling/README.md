@@ -802,6 +802,77 @@ The 7-symbol dataset gives more samples for representation experiments, but mixe
 This is now large enough for frozen-Kronos embedding + small classifier baselines, but still small for full fine-tuning.
 ```
 
+## Kronos Labeler Baseline
+
+The local environment does not yet have a Kronos/Torch encoder installed, so the first baseline uses a frozen **statistical window embedding** as a contract-compatible stand-in.
+This gives a sanity-check floor before wiring a real frozen Kronos encoder.
+
+Embedding:
+
+```text
+For each input feature over the 96-bar window:
+- mean
+- std
+- last
+- slope = last - first
+
+Input shape: [n_events, 96, 6]
+Embedding shape: [n_events, 24]
+```
+
+Models:
+
+```text
+majority baseline
+logistic regression, balanced
+random forest, balanced_subsample
+```
+
+Run:
+
+```bash
+just afml-kronos-tb-baseline
+
+python studies/afml/ch03-labeling/scripts/10_kronos_tb_labeler_baseline.py \
+  --dataset data/processed/afml/ch03/kronos/kronos_tb_labeler_7symbols_7symbols_m15_m1_ohlc_pt05_sl05_8h_202601_202605.npz
+```
+
+Four-symbol result:
+
+```text
+dataset rows: 1046
+train/test: 732 / 314
+test distribution: {pt: 154, sl: 110, t1: 50}
+
+majority accuracy: 0.490
+logistic accuracy: 0.424, edge: -0.067
+random forest accuracy: 0.532, edge: +0.041
+random forest balanced accuracy: 0.538
+random forest macro F1: 0.510
+```
+
+Seven-symbol result:
+
+```text
+dataset rows: 1885
+train/test: 1319 / 566
+test distribution: {pt: 265, sl: 215, t1: 86}
+
+majority accuracy: 0.468
+logistic accuracy: 0.521, edge: +0.053
+random forest accuracy: 0.558, edge: +0.090
+random forest balanced accuracy: 0.543
+random forest macro F1: 0.527
+```
+
+Interpretation:
+
+```text
+The statistical embedding baseline beats majority with random forest on both 4-symbol and 7-symbol datasets.
+The edge is modest, but it is enough to justify the next step: replace statistical embeddings with frozen Kronos embeddings and rerun the same classifier protocol.
+Do not treat this as a trading edge yet; it is only a label-prediction sanity check.
+```
+
 ## Notes
 
 - `getBins` uses the standard AFML-style directional label for vertical barrier exits in Exercise 3.1.

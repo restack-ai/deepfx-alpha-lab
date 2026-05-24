@@ -680,6 +680,88 @@ H1 event labels are clean and well-balanced, but only 129 events are available i
 Large H1 barriers with short 4h/8h vertical horizons are timeout-heavy and should not be used as the first Kronos MVP target.
 ```
 
+## Kronos Triple Barrier Labeler MVP
+
+The first Kronos MVP builds a fixed-window supervised dataset from the selected execution-aware labels.
+It does **not** train or serve Kronos yet; it creates the target matrix and metadata that a Kronos classifier/fine-tune step can consume next.
+
+Default target:
+
+```text
+symbol: XAUUSD
+event timeframe: M15
+path timeframe: M1 OHLC
+pt/sl: [0.5, 0.5]
+vertical barrier: 8h
+lookback: 96 M15 bars = 24h
+ambiguous policy: sl_first
+```
+
+Run:
+
+```bash
+just afml-kronos-tb-labeler
+```
+
+Default outputs:
+
+```text
+data/processed/afml/ch03/kronos/kronos_tb_labeler_xauusd_m15_m1_ohlc_pt05_sl05_8h_202601_202605.npz
+data/processed/afml/ch03/kronos/kronos_tb_labeler_xauusd_m15_m1_ohlc_pt05_sl05_8h_202601_202605_metadata.csv
+data/processed/afml/ch03/kronos/kronos_tb_labeler_xauusd_m15_m1_ohlc_pt05_sl05_8h_202601_202605_labels.csv
+data/processed/afml/ch03/kronos/kronos_tb_labeler_xauusd_m15_m1_ohlc_pt05_sl05_8h_202601_202605_summary.json
+```
+
+Dataset schema:
+
+```text
+x: float32 array [n_events, lookback, n_features]
+y_type: int64 multiclass target
+  0 = pt
+  1 = sl
+  2 = t1
+  3 = ambiguous
+y_bin: directional target copied from labels
+y_ret: realized barrier return
+metadata: event timestamps, t1, label type, return, target volatility
+```
+
+Feature columns:
+
+```text
+open, high, low, close, tick_volume, return_1
+```
+
+Normalization:
+
+```text
+OHLC columns are converted to relative distance from the event-bar close.
+The final close in each window is therefore 0.
+tick_volume is log-scaled by the window median volume.
+return_1 is kept as a stationary return feature.
+```
+
+Latest MVP dataset:
+
+```text
+event rows: 7947
+path rows: 119481
+CUSUM events: 274
+labels: 271
+dataset rows: 271
+x shape: [271, 96, 6]
+label type distribution: {pt: 132, sl: 109, t1: 30}
+bin distribution: {-1: 123, 1: 148}
+skipped for lookback: 0
+```
+
+Interpretation:
+
+```text
+This is enough for an MVP data contract and a tiny baseline classifier, but not enough for a serious Kronos fine-tune by itself.
+The next step should be either multi-symbol expansion or a frozen-Kronos embedding/classifier baseline rather than immediate full fine-tuning.
+```
+
 ## Notes
 
 - `getBins` uses the standard AFML-style directional label for vertical barrier exits in Exercise 3.1.

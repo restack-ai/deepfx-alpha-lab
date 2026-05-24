@@ -43,20 +43,23 @@ Done:
 - M5 event + M1 close-path barrier sweep
 - M5 event + M1 OHLC execution-aware barrier sweep
 - M15/H1 event-timeframe comparison with M1 OHLC execution-aware path
+- Kronos Triple Barrier Labeler MVP dataset builder
 
 Current interpretation:
 - Label geometry is usable as a research foundation.
 - EMA/BB primary + RandomForest meta-labeling is rejected as an edge candidate.
 - M15 event + M1 OHLC path is the strongest near-term Kronos target candidate for the H1/M15 discretionary workflow.
 - H1 event + M1 OHLC path is clean but sample-starved on the current dataset, so use it as a comparison/regime target until more history is available.
+- The first Kronos MVP now exports fixed-window supervised datasets; current XAUUSD-only sample is enough for data contract validation, not serious fine-tuning.
 ```
 
 Recommended next step:
 
 ```text
-Build MVP 1: Kronos Triple Barrier Labeler on top of M15 event + M1 OHLC execution-aware labels.
+Expand the Kronos Triple Barrier Labeler MVP beyond single-symbol XAUUSD.
 
-Preferred first target:
+Preferred expansion:
+- symbols: XAUUSD, XAGUSD, NAS100, US30 where clean M15/M1 OHLC history exists
 - event timeframe: M15
 - path timeframe: M1 OHLC
 - pt/sl: [0.5, 0.5]
@@ -64,7 +67,8 @@ Preferred first target:
 - ambiguity policy: sl_first
 
 Reason:
-This keeps the label close to the actual H1/M15 trading workflow while retaining roughly 2x more events than H1 labels in the current sample.
+The MVP data contract is now in place, but the current XAUUSD-only dataset has only ~271 events.
+Before full Kronos fine-tuning, increase label coverage or use frozen-Kronos embeddings with a small classifier.
 ```
 
 ---

@@ -718,6 +718,45 @@ This matches the purpose of meta-labeling: filter out false positives from the p
 
 ---
 
+# Kronos Labeler Classifier Path
+
+For the Kronos labeler study, the labeling output is consumed as a supervised classifier problem before any trading interpretation:
+
+```text
+fixed M15 lookback window -> embedding -> classifier -> first barrier type
+```
+
+Two embedding backends are intentionally compared under the same classifier protocol:
+
+```text
+1. statistical_window_summary
+   - per-feature mean/std/last/slope
+   - cheap floor baseline
+
+2. frozen_kronos_hidden_state
+   - upstream Kronos tokenizer + frozen decoder-only model
+   - use decode_s1 context hidden states
+   - default pooling: mean_last
+```
+
+The frozen Kronos path maps the alpha-lab dataset contract into Kronos's OHLCVA contract:
+
+```text
+input x columns: open, high, low, close, tick_volume, return_1
+Kronos columns: open, high, low, close, volume, amount
+volume = tick_volume
+amount = tick_volume * close
+```
+
+The comparison question is narrow on purpose:
+
+> Does a frozen financial-market foundation model representation improve pt/sl/t1 label prediction over simple window statistics?
+
+If it does not beat the statistical random-forest floor, the model is probably not worth carrying forward for this labeler path yet.
+If it does, the next step is walk-forward economic evaluation, not immediate live trading.
+
+---
+
 # Suggested Mini Project Structure
 
 ```text

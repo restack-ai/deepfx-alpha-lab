@@ -16,6 +16,7 @@ from deepfx_alpha_lab.kronos.baseline import (
     load_npz_dataset,
     write_json,
 )
+from deepfx_alpha_lab.kronos.encoder import KronosEncoderConfig, build_frozen_kronos_embeddings
 
 
 def parse_args() -> argparse.Namespace:
@@ -34,6 +35,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--train-frac", type=float, default=0.7)
     parser.add_argument("--random-state", type=int, default=42)
     parser.add_argument(
+        "--embedding",
+        choices=["statistical", "kronos"],
+        default="statistical",
+        help="Embedding backend: statistical summary baseline or frozen Kronos hidden states.",
+    )
+    parser.add_argument("--kronos-repo", type=Path, default=None, help="Path to cloned shiyu-coder/Kronos repo.")
+    parser.add_argument("--kronos-model", default="NeoQuasar/Kronos-mini")
+    parser.add_argument("--kronos-tokenizer", default="NeoQuasar/Kronos-Tokenizer-2k")
+    parser.add_argument("--device", default=None)
+    parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument("--max-context", type=int, default=512)
+    parser.add_argument("--pooling", choices=["last", "mean", "mean_last"], default="mean_last")
+    parser.add_argument("--freq", default="15min", help="Dataset event bar frequency, used to reconstruct Kronos time stamps.")
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=ROOT / "data" / "processed" / "afml" / "ch03" / "kronos",
@@ -44,7 +59,34 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     x, y_type, event_times, feature_columns = load_npz_dataset(args.dataset)
-    embeddings, embedding_columns = build_statistical_embeddings(x, feature_columns=feature_columns)
+    embedding_metadata = {}
+    if args.embedding == "statistical":
+        embeddings, embedding_columns = build_statistical_embeddings(x, feature_columns=feature_columns)
+        embedding_name = "statistical_window_summary"
+        suffix = "stat_embedding_baseline"
+    else:
+        config = KronosEncoderConfig(
+            model_id=args.kronos_model,
+            tokenizer_id=args.kronos_tokenizer,
+            kronos_repo=args.kronos_repo,
+            device=args.device,
+            batch_size=args.batch_size,
+            max_context=args.max_context,
+            pooling=args.pooling,
+            freq=args.freq,
+        )
+        try:
+            embeddings, embedding_columns, embedding_metadata = build_frozen_kronos_embeddings(
+                x,
+                event_times,
+                feature_columns=feature_columns,
+                config=config,
+            )
+        except RuntimeError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            raise SystemExit(2) from exc
+        embedding_name = "frozen_kronos_hidden_state"
+        suffix = f"kronos_{args.pooling}_embedding_baseline"
     results = evaluate_baseline_classifiers(
         embeddings,
         y_type,
@@ -55,7 +97,8 @@ def main() -> None:
     payload = {
         "dataset": str(args.dataset),
         "target": "y_type",
-        "embedding": "statistical_window_summary",
+        "embedding": embedding_name,
+        "embedding_metadata": embedding_metadata,
         "x_shape": list(x.shape),
         "embedding_shape": list(embeddings.shape),
         "feature_columns": feature_columns,
@@ -65,7 +108,7 @@ def main() -> None:
         **results,
     }
     stem = args.dataset.stem
-    out = args.output_dir / f"{stem}_stat_embedding_baseline.json"
+    out = args.output_dir / f"{stem}_{suffix}.json"
     write_json(out, payload)
     print(out.read_text())
     print(f"summary: {out}")

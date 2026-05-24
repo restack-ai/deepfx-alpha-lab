@@ -136,6 +136,9 @@ afml-kronos-tb-labeler-7symbols: check-clickhouse
 afml-kronos-tb-baseline:
     {{python}} studies/afml/ch03-labeling/scripts/10_kronos_tb_labeler_baseline.py
 
+afml-kronos-tb-baseline-kronos:
+    {{python}} studies/afml/ch03-labeling/scripts/10_kronos_tb_labeler_baseline.py --embedding kronos --kronos-repo ${KRONOS_REPO:-/data/LLM/models/Kronos}
+
 afml-mtf-sweep-clean:
     rm -f data/processed/afml/ch03/mtf_barrier_sweep_*.csv
     rm -f data/processed/afml/ch03/mtf_barrier_sweep_*.json

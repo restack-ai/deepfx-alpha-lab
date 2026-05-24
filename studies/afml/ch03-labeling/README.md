@@ -873,6 +873,53 @@ The edge is modest, but it is enough to justify the next step: replace statistic
 Do not treat this as a trading edge yet; it is only a label-prediction sanity check.
 ```
 
+### Frozen Kronos encoder wiring
+
+The baseline script now supports a real frozen Kronos hidden-state embedding backend:
+
+```bash
+# 1. Clone upstream Kronos outside the repo, preferably under /data/LLM/models
+# git clone https://github.com/shiyu-coder/Kronos /data/LLM/models/Kronos
+
+# 2. Install optional runtime deps in the project environment
+uv sync --extra dev --extra ml --extra kronos
+
+# 3. Run the same classifier protocol with frozen Kronos embeddings
+KRONOS_REPO=/data/LLM/models/Kronos just afml-kronos-tb-baseline-kronos
+
+python studies/afml/ch03-labeling/scripts/10_kronos_tb_labeler_baseline.py \
+  --embedding kronos \
+  --kronos-repo /data/LLM/models/Kronos \
+  --kronos-model NeoQuasar/Kronos-mini \
+  --kronos-tokenizer NeoQuasar/Kronos-Tokenizer-2k \
+  --dataset data/processed/afml/ch03/kronos/kronos_tb_labeler_7symbols_7symbols_m15_m1_ohlc_pt05_sl05_8h_202601_202605.npz
+```
+
+Embedding contract:
+
+```text
+alpha-lab x: [n_events, lookback, open/high/low/close/tick_volume/return_1]
+Kronos input: [n_events, lookback, open/high/low/close/volume/amount]
+amount approximation: tick_volume * close
+frozen representation: Kronos decode_s1 context hidden states
+pooling: mean_last by default
+```
+
+This keeps the evaluation apples-to-apples:
+
+```text
+statistical_window_summary + same classifiers
+vs
+frozen_kronos_hidden_state + same classifiers
+```
+
+Current local environment note:
+
+```text
+The code path is wired and tested, but this machine's active project env does not yet include torch/Kronos runtime dependencies.
+Without --extra kronos it exits with a clear dependency error instead of silently falling back to the statistical baseline.
+```
+
 ## Notes
 
 - `getBins` uses the standard AFML-style directional label for vertical barrier exits in Exercise 3.1.

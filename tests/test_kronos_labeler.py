@@ -3,6 +3,11 @@ import pandas as pd
 
 from deepfx_alpha_lab.kronos import build_kronos_label_dataset, concatenate_kronos_label_datasets
 from deepfx_alpha_lab.kronos.baseline import build_statistical_embeddings, time_ordered_split
+from deepfx_alpha_lab.kronos.encoder import (
+    build_kronos_model_input,
+    pool_sequence_embeddings,
+    reconstruct_window_timestamps,
+)
 
 
 def test_build_kronos_label_dataset_creates_fixed_windows_and_multiclass_targets():
@@ -119,3 +124,51 @@ def test_time_ordered_split_preserves_temporal_order():
 
     assert train_idx.tolist() == list(range(7))
     assert test_idx.tolist() == list(range(7, 10))
+
+
+def test_reconstruct_window_timestamps_ends_each_window_at_event_time():
+    event_times = pd.to_datetime(["2026-01-01 01:00", "2026-01-02 12:15"])
+
+    windows = reconstruct_window_timestamps(event_times, lookback=4, freq="15min")
+
+    assert windows.shape == (2, 4)
+    assert windows[0].tolist() == pd.to_datetime(
+        ["2026-01-01 00:15", "2026-01-01 00:30", "2026-01-01 00:45", "2026-01-01 01:00"]
+    ).tolist()
+    assert windows[1, -1] == pd.Timestamp("2026-01-02 12:15")
+
+
+def test_build_kronos_model_input_maps_dataset_features_to_ohlcva_contract():
+    x = np.array(
+        [
+            [
+                [1.0, 1.5, 0.5, 1.2, 10.0, 0.01],
+                [1.1, 1.6, 0.6, 1.3, 20.0, 0.02],
+            ]
+        ],
+        dtype="float32",
+    )
+
+    model_input, columns = build_kronos_model_input(
+        x,
+        feature_columns=["open", "high", "low", "close", "tick_volume", "return_1"],
+    )
+
+    assert model_input.shape == (1, 2, 6)
+    assert columns == ["open", "high", "low", "close", "volume", "amount"]
+    np.testing.assert_allclose(model_input[0, :, 4], [10.0, 20.0])
+    np.testing.assert_allclose(model_input[0, :, 5], [12.0, 26.0])
+
+
+def test_pool_sequence_embeddings_supports_last_mean_and_mean_last():
+    hidden = np.arange(2 * 3 * 4, dtype="float32").reshape(2, 3, 4)
+
+    last = pool_sequence_embeddings(hidden, pooling="last")
+    mean = pool_sequence_embeddings(hidden, pooling="mean")
+    mean_last = pool_sequence_embeddings(hidden, pooling="mean_last")
+
+    np.testing.assert_allclose(last, hidden[:, -1, :])
+    np.testing.assert_allclose(mean, hidden.mean(axis=1))
+    assert mean_last.shape == (2, 8)
+    np.testing.assert_allclose(mean_last[:, :4], mean)
+    np.testing.assert_allclose(mean_last[:, 4:], last)

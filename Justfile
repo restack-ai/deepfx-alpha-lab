@@ -115,6 +115,11 @@ afml-tb-sweep-clean:
 afml-mtf-sweep: check-clickhouse
     {{python}} studies/afml/ch03-labeling/scripts/07_mtf_barrier_sweep.py
 
+afml-mtf-ohlc-sweep: check-clickhouse
+    {{python}} studies/afml/ch03-labeling/scripts/08_mtf_ohlc_barrier_sweep.py
+
 afml-mtf-sweep-clean:
     rm -f data/processed/afml/ch03/mtf_barrier_sweep_*.csv
     rm -f data/processed/afml/ch03/mtf_barrier_sweep_*.json
+    rm -f data/processed/afml/ch03/mtf_ohlc_barrier_sweep_*.csv
+    rm -f data/processed/afml/ch03/mtf_ohlc_barrier_sweep_*.json

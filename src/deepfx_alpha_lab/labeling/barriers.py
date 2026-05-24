@@ -11,6 +11,8 @@ def add_vertical_barrier(
 ) -> pd.Series:
     """Map each event timestamp to the first close index at or after t0 + num_days."""
     close = close.dropna().sort_index()
+    close.index = pd.DatetimeIndex(close.index).as_unit("ns")
+    t_events = pd.DatetimeIndex(t_events).as_unit("ns")
     if close.empty or len(t_events) == 0:
         return pd.Series(dtype="datetime64[ns]")
 

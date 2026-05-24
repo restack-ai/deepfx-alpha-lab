@@ -1,6 +1,6 @@
 import pandas as pd
 
-from deepfx_alpha_lab.labeling import add_vertical_barrier, get_bins, get_events, symmetric_cusum_filter
+from deepfx_alpha_lab.labeling import add_vertical_barrier, get_bins, get_events, resolve_ohlc_events, symmetric_cusum_filter
 
 
 def test_symmetric_cusum_filter_samples_large_moves():
@@ -64,3 +64,61 @@ def test_add_vertical_barrier_uses_first_index_after_horizon():
     barriers = add_vertical_barrier(t_events, close, num_days=1)
 
     assert barriers.loc[index[0]] == index[2]
+
+
+def test_add_vertical_barrier_accepts_fractional_days_on_second_resolution_index():
+    index = pd.date_range("2026-05-01 00:00:00", periods=4, freq="h").astype("datetime64[s]")
+    close = pd.Series([1.0, 1.1, 1.2, 1.3], index=index)
+    t_events = pd.DatetimeIndex([index[0]])
+
+    barriers = add_vertical_barrier(t_events, close, num_days=0.0416666667)
+
+    assert barriers.loc[index[0]] == index[2]
+
+
+def test_ohlc_events_use_intrabar_high_for_profit_taking():
+    index = pd.date_range("2026-01-01", periods=3, freq="min")
+    path_bars = pd.DataFrame(
+        {
+            "open": [100.0, 100.0, 100.4],
+            "high": [100.0, 101.2, 100.5],
+            "low": [100.0, 99.8, 100.1],
+            "close": [100.0, 100.4, 100.2],
+        },
+        index=index,
+    )
+    entry_close = pd.Series([100.0], index=pd.DatetimeIndex([index[0]]))
+    t_events = pd.DatetimeIndex([index[0]])
+    t1 = pd.Series(index[-1], index=t_events)
+    trgt = pd.Series(0.01, index=t_events)
+
+    labels = resolve_ohlc_events(entry_close, path_bars, t_events, t1, trgt, pt=1.0, sl=1.0, min_ret=0.0)
+
+    assert labels.loc[index[0], "type"] == "pt"
+    assert labels.loc[index[0], "t1"] == index[1]
+    assert labels.loc[index[0], "bin"] == 1
+    assert labels.loc[index[0], "ret"] == 0.01
+
+
+def test_ohlc_events_use_conservative_sl_first_for_same_bar_ambiguity():
+    index = pd.date_range("2026-01-01", periods=2, freq="min")
+    path_bars = pd.DataFrame(
+        {
+            "open": [100.0, 100.0],
+            "high": [100.0, 101.5],
+            "low": [100.0, 98.5],
+            "close": [100.0, 100.2],
+        },
+        index=index,
+    )
+    entry_close = pd.Series([100.0], index=pd.DatetimeIndex([index[0]]))
+    t_events = pd.DatetimeIndex([index[0]])
+    t1 = pd.Series(index[-1], index=t_events)
+    trgt = pd.Series(0.01, index=t_events)
+
+    labels = resolve_ohlc_events(entry_close, path_bars, t_events, t1, trgt, pt=1.0, sl=1.0, min_ret=0.0)
+
+    assert labels.loc[index[0], "type"] == "sl"
+    assert labels.loc[index[0], "ambiguous"] == True
+    assert labels.loc[index[0], "bin"] == -1
+    assert labels.loc[index[0], "ret"] == -0.01

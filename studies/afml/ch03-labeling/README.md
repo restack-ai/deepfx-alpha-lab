@@ -554,6 +554,66 @@ The most practical M5 execution candidate remains [0.5,0.5] with 4h or 1d vertic
 Larger barriers become slower regime labels and need longer holding assumptions.
 ```
 
+### M5 Event, M1 OHLC Execution-Aware Sweep
+
+This experiment keeps event sampling on M5, but resolves barrier touches on the M1 OHLC path.
+Unlike close-path labeling, a barrier is considered touched when the intrabar high/low crosses the corresponding threshold.
+
+Same-bar ambiguity policy:
+
+```text
+If both profit-taking and stop-loss are touched inside the same M1 bar,
+use conservative sl_first ordering by default.
+```
+
+Run:
+
+```bash
+just afml-mtf-ohlc-sweep
+```
+
+Default outputs:
+
+```text
+data/processed/afml/ch03/mtf_ohlc_barrier_sweep_xauusd_m5_event_m1_path_ohlc_sl_first_202601_202605.csv
+data/processed/afml/ch03/mtf_ohlc_barrier_sweep_xauusd_m5_event_m1_path_ohlc_sl_first_202601_202605_labels.csv
+data/processed/afml/ch03/mtf_ohlc_barrier_sweep_xauusd_m5_event_m1_path_ohlc_sl_first_202601_202605.json
+```
+
+Result:
+
+| Event TF | Path TF | pt  | sl  | t1  | Events | + Rate | pt Rate | sl Rate | t1 Rate | Ambiguous | Median Hold |
+| -------- | ------- | --: | --: | --: | -----: | -----: | ------: | ------: | ------: | --------: | ----------: |
+| M5       | M1      | 0.5 | 0.5 | 4h  |    768 |  51.6% |   46.5% |   45.1% |    8.5% |      0.0% |      34 min |
+| M5       | M1      | 1.0 | 1.0 | 4h  |    768 |  54.0% |   31.4% |   31.0% |   37.6% |      0.0% |     148 min |
+| M5       | M1      | 1.5 | 1.5 | 4h  |    768 |  53.9% |   18.9% |   19.8% |   61.3% |      0.0% |     241 min |
+| M5       | M1      | 2.0 | 2.0 | 4h  |    768 |  54.7% |   11.5% |   12.8% |   75.8% |      0.0% |     241 min |
+| M5       | M1      | 0.5 | 0.5 | 1d  |    766 |  51.3% |   50.9% |   48.6% |    0.5% |      0.0% |      34 min |
+| M5       | M1      | 1.0 | 1.0 | 1d  |    766 |  52.1% |   49.7% |   45.6% |    4.7% |      0.0% |     148 min |
+| M5       | M1      | 1.5 | 1.5 | 1d  |    766 |  50.8% |   42.2% |   41.4% |   16.4% |      0.0% |     357 min |
+| M5       | M1      | 2.0 | 2.0 | 1d  |    766 |  51.4% |   34.9% |   35.2% |   29.9% |      0.0% |     713 min |
+
+Comparison with M1 close path:
+
+```text
+M5 [0.5,0.5], 4h:
+  M1 close path median hold 35m, t1 8.9%
+  M1 OHLC path median hold 34m, t1 8.5%
+
+M5 [1,1], 1d:
+  M1 close path median hold 153m, t1 5.1%
+  M1 OHLC path median hold 148m, t1 4.7%
+```
+
+Interpretation:
+
+```text
+OHLC high/low resolution moves labels slightly closer to execution reality.
+On this M5-event/M1-path setup, the effect is modest because M1 close-path already captures most moves.
+No same-bar ambiguous touches appeared in the default grid, so conservative sl_first did not materially affect these results.
+The best execution-aware baseline remains M5 event + M1 OHLC path with [0.5,0.5] and a 4h or 1d vertical barrier.
+```
+
 ## Notes
 
 - `getBins` uses the standard AFML-style directional label for vertical barrier exits in Exercise 3.1.
@@ -565,4 +625,5 @@ Larger barriers become slower regime labels and need longer holding assumptions.
 - M5 close-path labeling changes event geometry but still does not produce a validated meta-labeling edge.
 - Triple-barrier parameter sweep is a label-geometry diagnostic. It does not prove a trading edge by itself.
 - M5 event + M1 close path labeling is closer to execution reality than M5 close-path labeling, but it still does not model intrabar high/low TP/SL touches.
+- M5 event + M1 OHLC path labeling models intrabar high/low TP/SL touches with conservative same-bar `sl_first` ambiguity handling.
 - The reusable implementation lives under `src/deepfx_alpha_lab/labeling/` so that Kronos experiments can use the same labeling code later.

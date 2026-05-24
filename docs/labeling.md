@@ -1,5 +1,66 @@
 # Lecture Notes: Labeling Methods in AFML Chapter 3
 
+## Document Map
+
+This document is the **methodology and design reference** for AFML Chapter 3 labeling.
+
+The executable study code and latest experiment outputs live here:
+
+```text
+studies/afml/ch03-labeling/
+```
+
+Key files:
+
+```text
+studies/afml/ch03-labeling/README.md
+studies/afml/ch03-labeling/scripts/
+src/deepfx_alpha_lab/labeling/
+data/processed/afml/ch03/
+```
+
+Use this split intentionally:
+
+```text
+docs/labeling.md
+  -> Concepts, formulas, design rules, interpretation guidance
+
+studies/afml/ch03-labeling/README.md
+  -> Reproducible commands, latest results, diagnostics, rejected baselines
+```
+
+Current study status:
+
+```text
+Done:
+- AFML 3.1 triple-barrier baseline on XAUUSD M1/M5
+- AFML 3.3 vertical-barrier-zero variant
+- AFML 3.4 EMA crossover meta-labeling baseline
+- BB mean-reversion primary-signal check
+- monthly diagnostics
+- purged walk-forward validation
+- triple-barrier parameter sweeps
+- M5 event + M1 close-path barrier sweep
+- M5 event + M1 OHLC execution-aware barrier sweep
+
+Current interpretation:
+- Label geometry is usable as a research foundation.
+- EMA/BB primary + RandomForest meta-labeling is rejected as an edge candidate.
+- Execution-aware OHLC labels are now available and should be the default target candidate for Kronos labeling MVP work.
+```
+
+Recommended next step:
+
+```text
+Build MVP 1: Kronos Triple Barrier Labeler on top of execution-aware OHLC labels.
+
+Reason:
+The labeling layer now models intrabar high/low TP/SL touches with conservative same-bar ambiguity handling.
+Kronos should learn these execution-aware labels instead of softer close-path labels.
+```
+
+---
+
 ## 1. Three Labeling Methods
 
 ### 1.1 Fixed-Time Horizon Labeling

@@ -40,6 +40,8 @@ def test_build_kronos_label_dataset_creates_fixed_windows_and_multiclass_targets
     assert dataset.y_bin.tolist() == [1, -1]
     assert dataset.event_times.tolist() == [index[3], index[4]]
     assert dataset.feature_columns == ["open", "high", "low", "close", "tick_volume", "return_1"]
+    assert dataset.kronos_columns == ["open", "high", "low", "close", "volume", "amount"]
+    np.testing.assert_allclose(dataset.kronos_x[0, -1], [103.0, 104.0, 102.0, 103.5, 13.0, 1345.5])
     np.testing.assert_allclose(dataset.x[0, -1, 3], 0.0)
     assert dataset.metadata.loc[index[3], "label_type_id"] == 0
 
@@ -100,6 +102,7 @@ def test_concatenate_kronos_label_datasets_keeps_symbol_metadata():
     combined = concatenate_kronos_label_datasets([("XAUUSD", ds_a), ("NAS100", ds_b)])
 
     assert combined.x.shape == (2, 3, 6)
+    assert combined.kronos_x.shape == (2, 3, 6)
     assert combined.y_type.tolist() == [0, 1]
     assert combined.metadata["symbol"].tolist() == ["XAUUSD", "NAS100"]
     assert combined.metadata.index.tolist() == [index[3], index[4]]
@@ -124,6 +127,23 @@ def test_time_ordered_split_preserves_temporal_order():
 
     assert train_idx.tolist() == list(range(7))
     assert test_idx.tolist() == list(range(7, 10))
+
+
+def test_time_ordered_split_keeps_duplicate_timestamps_on_same_side():
+    event_times = pd.DatetimeIndex(
+        [
+            "2026-01-01 00:00",
+            "2026-01-01 01:00",
+            "2026-01-01 01:00",
+            "2026-01-01 02:00",
+            "2026-01-01 03:00",
+        ]
+    )
+
+    train_idx, test_idx = time_ordered_split(event_times, train_frac=0.5)
+
+    assert train_idx.tolist() == [0, 1, 2]
+    assert test_idx.tolist() == [3, 4]
 
 
 def test_reconstruct_window_timestamps_ends_each_window_at_event_time():
@@ -158,6 +178,18 @@ def test_build_kronos_model_input_maps_dataset_features_to_ohlcva_contract():
     assert columns == ["open", "high", "low", "close", "volume", "amount"]
     np.testing.assert_allclose(model_input[0, :, 4], [10.0, 20.0])
     np.testing.assert_allclose(model_input[0, :, 5], [12.0, 26.0])
+
+
+def test_build_kronos_model_input_uses_explicit_amount_when_available():
+    x = np.array([[[100.0, 101.0, 99.0, 100.5, 10.0, 5000.0]]], dtype="float32")
+
+    model_input, columns = build_kronos_model_input(
+        x,
+        feature_columns=["open", "high", "low", "close", "volume", "amount"],
+    )
+
+    assert columns == ["open", "high", "low", "close", "volume", "amount"]
+    np.testing.assert_allclose(model_input[0, 0], x[0, 0])
 
 
 def test_pool_sequence_embeddings_supports_last_mean_and_mean_last():

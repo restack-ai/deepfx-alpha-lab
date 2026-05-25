@@ -48,11 +48,17 @@ def build_statistical_embeddings(x: np.ndarray, *, feature_columns: list[str]) -
 def time_ordered_split(event_times: pd.DatetimeIndex, *, train_frac: float) -> tuple[np.ndarray, np.ndarray]:
     if not 0 < train_frac < 1:
         raise ValueError("train_frac must be between 0 and 1")
-    order = np.argsort(event_times.to_numpy(), kind="stable")
-    split = int(len(order) * train_frac)
-    if split <= 0 or split >= len(order):
+    event_values = event_times.to_numpy()
+    unique_times = np.sort(pd.unique(event_values))
+    split = int(len(unique_times) * train_frac)
+    if split <= 0 or split >= len(unique_times):
         raise ValueError("Not enough events for train/test split")
-    return order[:split], order[split:]
+    cutoff = unique_times[split]
+    train_idx = np.flatnonzero(event_values < cutoff)
+    test_idx = np.flatnonzero(event_values >= cutoff)
+    if len(train_idx) == 0 or len(test_idx) == 0:
+        raise ValueError("Not enough events for train/test split")
+    return train_idx, test_idx
 
 
 def _metrics(y_true: np.ndarray, pred: np.ndarray) -> dict[str, float]:
@@ -108,13 +114,17 @@ def evaluate_baseline_classifiers(
     return results
 
 
-def load_npz_dataset(path: Path) -> tuple[np.ndarray, np.ndarray, pd.DatetimeIndex, list[str]]:
+def load_npz_dataset(
+    path: Path,
+) -> tuple[np.ndarray, np.ndarray, pd.DatetimeIndex, list[str], np.ndarray | None, list[str] | None]:
     data = np.load(path, allow_pickle=True)
     x = data["x"]
     y_type = data["y_type"]
     event_times = pd.to_datetime(data["event_times"].astype("int64"))
     feature_columns = [str(item) for item in data["feature_columns"].tolist()]
-    return x, y_type, pd.DatetimeIndex(event_times), feature_columns
+    kronos_x = data["kronos_x"] if "kronos_x" in data.files else None
+    kronos_columns = [str(item) for item in data["kronos_columns"].tolist()] if "kronos_columns" in data.files else None
+    return x, y_type, pd.DatetimeIndex(event_times), feature_columns, kronos_x, kronos_columns
 
 
 def write_json(path: Path, payload: dict[str, object]) -> None:

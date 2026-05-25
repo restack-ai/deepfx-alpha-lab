@@ -7,7 +7,7 @@ default:
     @just --list
 
 setup:
-    {{python}} -m pip install -e '.[dev,ml]'
+    {{python}} -m pip install -e '.[dev,ml,kronos]'
 
 test:
     {{python}} -m pytest -q
@@ -136,8 +136,24 @@ afml-kronos-tb-labeler-7symbols: check-clickhouse
 afml-kronos-tb-baseline:
     {{python}} studies/afml/ch03-labeling/scripts/10_kronos_tb_labeler_baseline.py
 
+afml-kronos-tb-baseline-7symbols:
+    {{python}} studies/afml/ch03-labeling/scripts/10_kronos_tb_labeler_baseline.py --dataset data/processed/afml/ch03/kronos/kronos_tb_labeler_7symbols_7symbols_m15_m1_ohlc_pt05_sl05_8h_202601_202605.npz
+
 afml-kronos-tb-baseline-kronos:
-    {{python}} studies/afml/ch03-labeling/scripts/10_kronos_tb_labeler_baseline.py --embedding kronos --kronos-repo ${KRONOS_REPO:-/data/LLM/models/Kronos}
+    {{python}} studies/afml/ch03-labeling/scripts/10_kronos_tb_labeler_baseline.py --embedding kronos --kronos-repo ${KRONOS_REPO:-/data/LLM/models/Kronos} --batch-size 64
+
+afml-kronos-tb-baseline-kronos-7symbols:
+    {{python}} studies/afml/ch03-labeling/scripts/10_kronos_tb_labeler_baseline.py --dataset data/processed/afml/ch03/kronos/kronos_tb_labeler_7symbols_7symbols_m15_m1_ohlc_pt05_sl05_8h_202601_202605.npz --embedding kronos --kronos-repo ${KRONOS_REPO:-/data/LLM/models/Kronos} --batch-size 64
+
+afml-labeling-report: \
+    afml-mtf-ohlc-sweep-m15 \
+    afml-mtf-ohlc-sweep-h1 \
+    afml-kronos-tb-labeler-multisymbol \
+    afml-kronos-tb-labeler-7symbols \
+    afml-kronos-tb-baseline \
+    afml-kronos-tb-baseline-7symbols \
+    afml-kronos-tb-baseline-kronos \
+    afml-kronos-tb-baseline-kronos-7symbols
 
 afml-mtf-sweep-clean:
     rm -f data/processed/afml/ch03/mtf_barrier_sweep_*.csv

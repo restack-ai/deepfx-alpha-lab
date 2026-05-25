@@ -73,7 +73,7 @@ def resolve_ohlc_events(
         entry_price = float(entry_close.loc[t0])
         target = float(trgt.loc[t0])
         vertical_time = t1.loc[t0]
-        path = path_bars.loc[t0:vertical_time]
+        path = path_bars.loc[(path_bars.index > t0) & (path_bars.index <= vertical_time)]
         if path.empty:
             continue
 

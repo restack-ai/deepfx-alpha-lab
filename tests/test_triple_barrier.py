@@ -100,6 +100,29 @@ def test_ohlc_events_use_intrabar_high_for_profit_taking():
     assert labels.loc[index[0], "ret"] == 0.01
 
 
+def test_ohlc_events_ignore_entry_bar_high_low_before_trade_can_exist():
+    index = pd.date_range("2026-01-01", periods=3, freq="min")
+    path_bars = pd.DataFrame(
+        {
+            "open": [100.0, 100.0, 100.0],
+            "high": [101.5, 100.2, 100.2],
+            "low": [98.5, 99.8, 99.8],
+            "close": [100.0, 100.1, 100.1],
+        },
+        index=index,
+    )
+    entry_close = pd.Series([100.0], index=pd.DatetimeIndex([index[0]]))
+    t_events = pd.DatetimeIndex([index[0]])
+    t1 = pd.Series(index[-1], index=t_events)
+    trgt = pd.Series(0.01, index=t_events)
+
+    labels = resolve_ohlc_events(entry_close, path_bars, t_events, t1, trgt, pt=1.0, sl=1.0, min_ret=0.0)
+
+    assert labels.loc[index[0], "type"] == "t1"
+    assert labels.loc[index[0], "t1"] == index[-1]
+    assert labels.loc[index[0], "bin"] == 1
+
+
 def test_ohlc_events_use_conservative_sl_first_for_same_bar_ambiguity():
     index = pd.date_range("2026-01-01", periods=2, freq="min")
     path_bars = pd.DataFrame(

@@ -54,7 +54,7 @@ def build_kronos_model_input(
 
     Kronos expects six columns: open, high, low, close, volume, amount.
     The alpha-lab dataset stores tick volume as ``tick_volume`` and does not
-    have amount, so amount is approximated as volume * close.
+    have amount, so amount is approximated as volume * close when absent.
     """
     if x.ndim != 3:
         raise ValueError("x must have shape [n_events, lookback, n_features]")
@@ -74,7 +74,7 @@ def build_kronos_model_input(
     low = x[:, :, index["low"]]
     close = x[:, :, index["close"]]
     volume = x[:, :, index[volume_name]]
-    amount = volume * close
+    amount = x[:, :, index["amount"]] if "amount" in index else volume * close
     model_input = np.stack([open_, high, low, close, volume, amount], axis=2).astype("float32")
     return model_input, ["open", "high", "low", "close", "volume", "amount"]
 
@@ -180,8 +180,8 @@ def build_frozen_kronos_embeddings(
     with torch.no_grad():
         for start in range(0, len(norm_x), cfg.batch_size):
             end = min(start + cfg.batch_size, len(norm_x))
-            xb = torch.from_numpy(norm_x[start:end]).to(device)
-            sb = torch.from_numpy(stamps[start:end]).to(device)
+            xb = torch.from_numpy(norm_x[start:end].copy()).to(device)
+            sb = torch.from_numpy(stamps[start:end].copy()).to(device)
             if xb.shape[1] > cfg.max_context:
                 xb = xb[:, -cfg.max_context :, :]
                 sb = sb[:, -cfg.max_context :, :]

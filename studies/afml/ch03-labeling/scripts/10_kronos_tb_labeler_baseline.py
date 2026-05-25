@@ -58,13 +58,15 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    x, y_type, event_times, feature_columns = load_npz_dataset(args.dataset)
+    x, y_type, event_times, feature_columns, kronos_x, kronos_columns = load_npz_dataset(args.dataset)
     embedding_metadata = {}
     if args.embedding == "statistical":
         embeddings, embedding_columns = build_statistical_embeddings(x, feature_columns=feature_columns)
         embedding_name = "statistical_window_summary"
         suffix = "stat_embedding_baseline"
     else:
+        if kronos_x is None or kronos_columns is None:
+            raise SystemExit("error: dataset does not contain raw Kronos input windows; rebuild it with script 09")
         config = KronosEncoderConfig(
             model_id=args.kronos_model,
             tokenizer_id=args.kronos_tokenizer,
@@ -77,9 +79,9 @@ def main() -> None:
         )
         try:
             embeddings, embedding_columns, embedding_metadata = build_frozen_kronos_embeddings(
-                x,
+                kronos_x,
                 event_times,
-                feature_columns=feature_columns,
+                feature_columns=kronos_columns,
                 config=config,
             )
         except RuntimeError as exc:

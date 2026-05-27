@@ -2,6 +2,8 @@
 
 AI-driven FX research, validation, and alpha discovery framework.
 
+<img width="1672" height="941" alt="bg" src="https://github.com/user-attachments/assets/5e1fbd07-c4a6-44b9-b7f9-82134df708c8" />
+
 `deepfx-alpha-lab` is a research-oriented repository for validating AI-based FX signals, especially Kronos shadow signals, under realistic trading assumptions.
 
 The goal is not simply to ask:

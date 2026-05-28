@@ -25,6 +25,7 @@ def concatenate_kronos_label_datasets(items: list[tuple[str, KronosLabelDataset]
             metadata=pd.DataFrame(),
             kronos_x=np.empty((0, 0, 0), dtype="float32"),
             kronos_columns=["open", "high", "low", "close", "volume", "amount"],
+            window_times=np.empty((0, 0), dtype="int64"),
         )
 
     feature_columns = non_empty[0][1].feature_columns
@@ -37,6 +38,7 @@ def concatenate_kronos_label_datasets(items: list[tuple[str, KronosLabelDataset]
 
     x = np.concatenate([dataset.x for _, dataset in non_empty], axis=0).astype("float32")
     kronos_x = np.concatenate([dataset.kronos_x for _, dataset in non_empty], axis=0).astype("float32")
+    window_times = np.concatenate([dataset.window_times for _, dataset in non_empty], axis=0).astype("int64")
     y_type = np.concatenate([dataset.y_type for _, dataset in non_empty]).astype("int64")
     y_bin = np.concatenate([dataset.y_bin for _, dataset in non_empty]).astype("int64")
     y_ret = np.concatenate([dataset.y_ret for _, dataset in non_empty]).astype("float32")
@@ -60,6 +62,7 @@ def concatenate_kronos_label_datasets(items: list[tuple[str, KronosLabelDataset]
         metadata=metadata_all.iloc[order],
         kronos_x=kronos_x[order],
         kronos_columns=list(kronos_columns),
+        window_times=window_times[order],
     )
 
 
@@ -74,6 +77,7 @@ class KronosLabelDataset:
     metadata: pd.DataFrame
     kronos_x: np.ndarray
     kronos_columns: list[str]
+    window_times: np.ndarray
 
     def save(self, output_dir: Path, stem: str) -> dict[str, Path]:
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -89,6 +93,7 @@ class KronosLabelDataset:
             feature_columns=np.array(self.feature_columns, dtype=object),
             kronos_x=self.kronos_x,
             kronos_columns=np.array(self.kronos_columns, dtype=object),
+            window_times=self.window_times,
         )
         self.metadata.to_csv(metadata_path)
         return {"npz": npz_path, "metadata": metadata_path}
@@ -165,6 +170,7 @@ def build_kronos_label_dataset(
     labels = labels.sort_index().copy()
     rows: list[np.ndarray] = []
     kronos_rows: list[np.ndarray] = []
+    window_time_rows: list[np.ndarray] = []
     metadata_rows: list[dict[str, object]] = []
     event_times: list[pd.Timestamp] = []
     y_type: list[int] = []
@@ -195,6 +201,7 @@ def build_kronos_label_dataset(
         label_type_id = LABEL_TYPE_TO_ID[label_type]
         rows.append(_normalize_window(window))
         kronos_rows.append(kronos_window[kronos_columns].to_numpy(dtype="float32"))
+        window_time_rows.append(kronos_window.index.astype("datetime64[ns]").astype("int64").to_numpy())
         event_times.append(pd.Timestamp(event_time))
         y_type.append(label_type_id)
         y_bin.append(int(label.get("bin", 0)))
@@ -217,6 +224,9 @@ def build_kronos_label_dataset(
         if kronos_rows
         else np.empty((0, lookback, len(kronos_columns)), dtype="float32")
     )
+    window_times = (
+        np.stack(window_time_rows).astype("int64") if window_time_rows else np.empty((0, lookback), dtype="int64")
+    )
     metadata = pd.DataFrame(metadata_rows)
     if not metadata.empty:
         metadata = metadata.set_index("t0").sort_index()
@@ -230,4 +240,5 @@ def build_kronos_label_dataset(
         metadata=metadata,
         kronos_x=kronos_x,
         kronos_columns=kronos_columns,
+        window_times=window_times,
     )

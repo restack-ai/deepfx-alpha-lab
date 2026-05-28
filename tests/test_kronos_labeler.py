@@ -41,6 +41,8 @@ def test_build_kronos_label_dataset_creates_fixed_windows_and_multiclass_targets
     assert dataset.event_times.tolist() == [index[3], index[4]]
     assert dataset.feature_columns == ["open", "high", "low", "close", "tick_volume", "return_1"]
     assert dataset.kronos_columns == ["open", "high", "low", "close", "volume", "amount"]
+    assert dataset.window_times.shape == (2, 4)
+    np.testing.assert_array_equal(dataset.window_times[0], index[:4].astype("datetime64[ns]").astype("int64"))
     np.testing.assert_allclose(dataset.kronos_x[0, -1], [103.0, 104.0, 102.0, 103.5, 13.0, 1345.5])
     np.testing.assert_allclose(dataset.x[0, -1, 3], 0.0)
     assert dataset.metadata.loc[index[3], "label_type_id"] == 0
@@ -103,6 +105,7 @@ def test_concatenate_kronos_label_datasets_keeps_symbol_metadata():
 
     assert combined.x.shape == (2, 3, 6)
     assert combined.kronos_x.shape == (2, 3, 6)
+    assert combined.window_times.shape == (2, 3)
     assert combined.y_type.tolist() == [0, 1]
     assert combined.metadata["symbol"].tolist() == ["XAUUSD", "NAS100"]
     assert combined.metadata.index.tolist() == [index[3], index[4]]

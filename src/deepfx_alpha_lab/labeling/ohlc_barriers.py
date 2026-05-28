@@ -101,9 +101,10 @@ def resolve_ohlc_events(
                 break
 
         if first_time is None:
-            first_time = vertical_time
+            last_bar = path.iloc[-1]
+            first_time = path.index[-1]
             first_type = "t1"
-            first_ret = float(path_bars.loc[first_time, "close"] / entry_price - 1.0)
+            first_ret = float(last_bar["close"] / entry_price - 1.0)
             ambiguous = False
 
         if first_type == "ambiguous":

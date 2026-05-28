@@ -116,7 +116,7 @@ def evaluate_baseline_classifiers(
 
 def load_npz_dataset(
     path: Path,
-) -> tuple[np.ndarray, np.ndarray, pd.DatetimeIndex, list[str], np.ndarray | None, list[str] | None]:
+) -> tuple[np.ndarray, np.ndarray, pd.DatetimeIndex, list[str], np.ndarray | None, list[str] | None, np.ndarray | None]:
     data = np.load(path, allow_pickle=True)
     x = data["x"]
     y_type = data["y_type"]
@@ -124,7 +124,8 @@ def load_npz_dataset(
     feature_columns = [str(item) for item in data["feature_columns"].tolist()]
     kronos_x = data["kronos_x"] if "kronos_x" in data.files else None
     kronos_columns = [str(item) for item in data["kronos_columns"].tolist()] if "kronos_columns" in data.files else None
-    return x, y_type, pd.DatetimeIndex(event_times), feature_columns, kronos_x, kronos_columns
+    window_times = data["window_times"] if "window_times" in data.files else None
+    return x, y_type, pd.DatetimeIndex(event_times), feature_columns, kronos_x, kronos_columns, window_times
 
 
 def write_json(path: Path, payload: dict[str, object]) -> None:

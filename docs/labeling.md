@@ -45,7 +45,7 @@ Current interpretation:
 - The Kronos labeler dataset now stores two tensors:
   - `x`: normalized statistical features for cheap baselines.
   - `kronos_x`: raw OHLCVA windows for frozen Kronos embeddings.
-- Frozen Kronos `mean_last` embeddings improve the 4-symbol RandomForest result, but do not clearly dominate on the 7-symbol set.
+- Frozen Kronos `mean_last` embeddings show a small single-cutoff lift on the 4-symbol RandomForest result, but do not clearly dominate on the 7-symbol set.
 
 Next step:
 
@@ -61,7 +61,7 @@ Run embedding ablations before any trading interpretation:
 
 ## Latest Results
 
-These results were regenerated on 2026-05-26 after the current correctness fixes:
+These results were regenerated on 2026-05-26 and should be read as a historical single-cutoff baseline:
 
 ```text
 1. OHLC path labels ignore the entry bar high/low and start after t0.
@@ -70,6 +70,8 @@ These results were regenerated on 2026-05-26 after the current correctness fixes
 4. torch/kronos optional dependencies are installed with:
    just setup
 ```
+
+Current code now also persists actual selected bar timestamps as `window_times` for rebuilt Kronos datasets and uses a prior-bar daily volatility CUSUM threshold instead of a full-sample volatility mean. Regenerated row counts and baseline metrics may therefore differ from the table below.
 
 ![Kronos labeler results](assets/labeling-kronos-results.svg)
 
@@ -125,7 +127,7 @@ device: cuda:0
 
 Interpretation:
 
-- 4-symbol frozen Kronos is promising: RandomForest accuracy rises from 51.1% to 53.3%.
+- 4-symbol frozen Kronos shows a small single-cutoff RandomForest lift from 51.1% to 53.3%.
 - 7-symbol frozen Kronos ties statistical RandomForest on accuracy but has lower balanced accuracy.
 - This is useful representation evidence, not enough for trading claims.
 - The next question is whether the Kronos lift survives pooling ablations and walk-forward folds.
@@ -301,6 +303,7 @@ Current preferred setting:
 event bars: M15
 path bars: M1 OHLC
 event sampling: symmetric CUSUM
+event threshold: prior-bar EWMA daily volatility
 target volatility: EWMA daily volatility
 pt/sl: 0.5 / 0.5
 vertical barrier: 0.3333333333 days, about 8h
@@ -323,9 +326,20 @@ kronos_x:
   columns: open, high, low, close, volume, amount
   amount = volume * close
   use: upstream Kronos tokenizer and frozen encoder
+
+window_times:
+  actual selected event-bar timestamps for each kronos_x window
+  dtype: int64 nanosecond timestamps
+  use: Kronos time covariates
 ```
 
-This separation matters. Frozen Kronos should receive raw OHLCVA-like windows, not the pre-normalized relative features used by the statistical baseline.
+This separation matters. The dataset stores raw OHLCVA-like `kronos_x` windows instead of the pre-normalized relative features used by the statistical baseline. The current frozen encoder path then applies per-window z-score normalization and clipping before calling the upstream Kronos tokenizer:
+
+```text
+normalization: per_window_zscore
+clip: 5.0
+timestamp source: window_times when present; reconstructed fixed grid only for older datasets
+```
 
 ### Classifier Protocol
 
@@ -366,6 +380,7 @@ The classifier is only a label-prediction sanity check. It is not a trading back
 | Use M15 as main target | better sample count than H1 with acceptable balance |
 | Keep H1 as comparison target | cleaner, slower regime view but too few events |
 | Store `kronos_x` separately | avoids sending distorted relative features into Kronos |
+| Store `window_times` separately | makes Kronos time covariates match the actual selected bars |
 | Split by timestamp cutoff | avoids leakage across symbols with identical event timestamps |
 
 ### Rejected Or Not Yet Accepted
@@ -488,6 +503,7 @@ kronos_tb_labeler_7symbols_7symbols_m15_m1_ohlc_pt05_sl05_8h_202601_202605.npz
 - OHLC same-bar ambiguity cannot be fully solved without tick order; `sl_first` is conservative, not objectively true.
 - Classifier accuracy is not a trading metric.
 - Frozen Kronos results use one train/test cutoff, not a complete walk-forward fold study.
+- The 2026-05-26 result table predates the current `window_times` and prior-bar CUSUM threshold rebuild path; reruns may change event counts and metrics.
 - Model outputs are label-prediction evidence only; economic validation still needs PnL, drawdown, trade count, turnover, and regime breakdown.
 
 ---

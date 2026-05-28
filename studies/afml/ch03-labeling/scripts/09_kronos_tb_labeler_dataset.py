@@ -63,6 +63,12 @@ def distribution(series: pd.Series) -> dict[str, int]:
     return {str(k): int(v) for k, v in series.value_counts(dropna=False).sort_index().items()}
 
 
+def build_cusum_threshold(event_close: pd.Series, daily_vol: pd.Series) -> pd.Series:
+    """Use only volatility known before each candidate event bar."""
+    threshold = daily_vol.shift(1).reindex(event_close.index, method="ffill").dropna()
+    return threshold[threshold > 0]
+
+
 def build_symbol_dataset(symbol: str, args: argparse.Namespace):
     event_bars = load_ohlcv(symbol, args.event_timeframe, start=args.start, end=args.end)
     path_bars = load_ohlcv(symbol, args.path_timeframe, start=args.start, end=args.end)
@@ -76,11 +82,11 @@ def build_symbol_dataset(symbol: str, args: argparse.Namespace):
 
     event_close = event_bars["close"].dropna()
     daily_vol = get_daily_vol(event_close, span=args.vol_span).dropna()
-    if event_close.empty or path_bars.empty or daily_vol.empty:
+    cusum_threshold = build_cusum_threshold(event_close, daily_vol)
+    if event_close.empty or path_bars.empty or daily_vol.empty or cusum_threshold.empty:
         raise RuntimeError(f"{symbol}: no usable event close, path bars, or daily volatility")
 
-    threshold = float(daily_vol.mean())
-    t_events = symmetric_cusum_filter(event_close, threshold=threshold)
+    t_events = symmetric_cusum_filter(event_close, threshold=cusum_threshold)
     t1 = add_vertical_barrier(t_events, path_bars["close"], num_days=args.num_days)
     labels = resolve_ohlc_events(
         entry_close=event_close,
@@ -103,7 +109,9 @@ def build_symbol_dataset(symbol: str, args: argparse.Namespace):
         "end": str(event_bars.index.max()),
         "event_rows": int(len(event_bars)),
         "path_rows": int(len(path_bars)),
-        "daily_vol_mean": threshold,
+        "daily_vol_mean": float(daily_vol.mean()),
+        "cusum_threshold_method": "prior_bar_daily_vol",
+        "cusum_threshold_mean": float(cusum_threshold.mean()),
         "cusum_events": int(len(t_events)),
         "labels": int(len(labels)),
         "dataset_rows": int(len(dataset.y_type)),
@@ -163,6 +171,10 @@ def main() -> None:
         "lookback": int(args.lookback),
         "feature_columns": dataset.feature_columns,
         "x_shape": list(dataset.x.shape),
+        "kronos_columns": dataset.kronos_columns,
+        "kronos_x_shape": list(dataset.kronos_x.shape),
+        "window_times_shape": list(dataset.window_times.shape),
+        "cusum_threshold_method": "prior_bar_daily_vol",
         "pt_sl": [float(args.pt), float(args.sl)],
         "num_days": float(args.num_days),
         "label_type_distribution": distribution(label_type_series),

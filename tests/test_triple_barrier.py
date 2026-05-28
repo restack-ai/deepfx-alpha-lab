@@ -142,6 +142,6 @@ def test_ohlc_events_use_conservative_sl_first_for_same_bar_ambiguity():
     labels = resolve_ohlc_events(entry_close, path_bars, t_events, t1, trgt, pt=1.0, sl=1.0, min_ret=0.0)
 
     assert labels.loc[index[0], "type"] == "sl"
-    assert labels.loc[index[0], "ambiguous"] == True
+    assert bool(labels.loc[index[0], "ambiguous"]) is True
     assert labels.loc[index[0], "bin"] == -1
     assert labels.loc[index[0], "ret"] == -0.01

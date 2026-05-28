@@ -47,7 +47,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--max-context", type=int, default=512)
     parser.add_argument("--pooling", choices=["last", "mean", "mean_last"], default="mean_last")
-    parser.add_argument("--freq", default="15min", help="Dataset event bar frequency, used to reconstruct Kronos time stamps.")
+    parser.add_argument("--freq", default="15min", help="Fallback event bar frequency for older datasets without window_times.")
     parser.add_argument(
         "--output-dir",
         type=Path,
@@ -58,7 +58,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    x, y_type, event_times, feature_columns, kronos_x, kronos_columns = load_npz_dataset(args.dataset)
+    x, y_type, event_times, feature_columns, kronos_x, kronos_columns, window_times = load_npz_dataset(args.dataset)
     embedding_metadata = {}
     if args.embedding == "statistical":
         embeddings, embedding_columns = build_statistical_embeddings(x, feature_columns=feature_columns)
@@ -82,6 +82,7 @@ def main() -> None:
                 kronos_x,
                 event_times,
                 feature_columns=kronos_columns,
+                window_times=window_times,
                 config=config,
             )
         except RuntimeError as exc:
@@ -102,8 +103,11 @@ def main() -> None:
         "embedding": embedding_name,
         "embedding_metadata": embedding_metadata,
         "x_shape": list(x.shape),
+        "kronos_x_shape": list(kronos_x.shape) if kronos_x is not None else None,
+        "window_times_shape": list(window_times.shape) if window_times is not None else None,
         "embedding_shape": list(embeddings.shape),
         "feature_columns": feature_columns,
+        "kronos_columns": kronos_columns,
         "embedding_columns": embedding_columns,
         "train_frac": float(args.train_frac),
         "random_state": int(args.random_state),

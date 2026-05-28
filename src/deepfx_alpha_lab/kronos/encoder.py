@@ -130,6 +130,23 @@ def _calc_time_stamps(window_timestamps: np.ndarray) -> np.ndarray:
     return time_df.to_numpy(dtype="float32").reshape(*window_timestamps.shape, 5)
 
 
+def _resolve_window_timestamps(
+    *,
+    event_times: pd.DatetimeIndex,
+    lookback: int,
+    freq: str,
+    window_times: np.ndarray | None,
+) -> tuple[np.ndarray, str]:
+    if window_times is None:
+        return reconstruct_window_timestamps(event_times, lookback=lookback, freq=freq), "reconstructed"
+
+    resolved = np.asarray(window_times)
+    expected_shape = (len(event_times), lookback)
+    if resolved.shape != expected_shape:
+        raise ValueError(f"window_times must have shape {expected_shape}, got {resolved.shape}")
+    return resolved, "actual_window_index"
+
+
 def _normalize_for_kronos(x: np.ndarray, *, clip: float) -> np.ndarray:
     mean = x.mean(axis=1, keepdims=True)
     std = x.std(axis=1, keepdims=True)
@@ -142,6 +159,7 @@ def build_frozen_kronos_embeddings(
     event_times: pd.DatetimeIndex,
     *,
     feature_columns: list[str],
+    window_times: np.ndarray | None = None,
     config: KronosEncoderConfig | None = None,
 ) -> tuple[np.ndarray, list[str], dict[str, object]]:
     """Extract frozen Kronos hidden-state embeddings for fixed-window events.
@@ -172,7 +190,12 @@ def build_frozen_kronos_embeddings(
     model = model.to(device).eval()
 
     model_input, input_columns = build_kronos_model_input(x, feature_columns=feature_columns)
-    window_timestamps = reconstruct_window_timestamps(event_times, lookback=x.shape[1], freq=cfg.freq)
+    window_timestamps, timestamp_source = _resolve_window_timestamps(
+        event_times=event_times,
+        lookback=x.shape[1],
+        freq=cfg.freq,
+        window_times=window_times,
+    )
     stamps = _calc_time_stamps(window_timestamps)
     norm_x = _normalize_for_kronos(model_input, clip=cfg.clip)
 
@@ -199,8 +222,10 @@ def build_frozen_kronos_embeddings(
         "batch_size": cfg.batch_size,
         "max_context": cfg.max_context,
         "clip": cfg.clip,
+        "normalization": "per_window_zscore",
         "pooling": cfg.pooling,
         "freq": cfg.freq,
+        "timestamp_source": timestamp_source,
         "input_columns": input_columns,
     }
     return embeddings, columns, metadata

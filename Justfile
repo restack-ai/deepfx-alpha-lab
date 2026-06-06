@@ -174,5 +174,13 @@ afml-ch04-clean:
 afml-ch07-purged-xauusd-m1:
     {{python}} studies/afml/ch07/scripts/01_purged_walk_forward.py --dataset data/processed/afml/ch03/exercise_3_4_xauusd_m1_dataset.csv --out-dir data/processed/afml/ch07/purged_xauusd_m1_202601_202605 --start 2026-01-01T00:00:00Z --end 2026-06-01T00:00:00Z --embargo-days 1
 
+afml-ch07-weighted-bb-m1:
+    {{python}} studies/afml/ch07/scripts/01_purged_walk_forward.py --dataset data/processed/afml/ch03/exercise_3_4_xauusd_m1_bb_reversion_dataset.csv --out-dir data/processed/afml/ch07/purged_weighted_xauusd_m1_bb_reversion_202601_202605 --start 2026-01-01T00:00:00Z --end 2026-06-01T00:00:00Z --embargo-days 1 --weight-mode portfolio
+
+afml-ch07-weighted-bb-m5:
+    {{python}} studies/afml/ch07/scripts/01_purged_walk_forward.py --dataset data/processed/afml/ch03/exercise_3_4_xauusd_m5_bb_reversion_dataset.csv --out-dir data/processed/afml/ch07/purged_weighted_xauusd_m5_bb_reversion_202601_202605 --start 2026-01-01T00:00:00Z --end 2026-06-01T00:00:00Z --embargo-days 1 --weight-mode portfolio
+
+afml-ch07-weighted-bb: afml-ch07-weighted-bb-m1 afml-ch07-weighted-bb-m5
+
 afml-ch07-clean:
     rm -rf data/processed/afml/ch07

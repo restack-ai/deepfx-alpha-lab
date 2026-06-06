@@ -14,7 +14,8 @@ The first pass implements:
 - purged expanding walk-forward validation;
 - interval-overlap purging using `t0/t1` labels;
 - optional post-test embargo;
-- comparison against naive expanding walk-forward validation.
+- comparison against naive expanding walk-forward validation;
+- optional Ch04 uniqueness sample weights for the training fold via `--weight-mode none|symbol|portfolio`.
 
 ## Study 01: Ch03 XAUUSD M1 meta-label data
 
@@ -107,6 +108,43 @@ positive-edge folds: 0 / 4
 
 This reinforces the earlier Ch03 conclusion: the EMA primary + RF meta-labeling baseline is not a validated edge.
 
+## Study 02: Ch04-weighted Ch07 validation for BB-reversion
+
+Input variants:
+
+```text
+data/processed/afml/ch03/exercise_3_4_xauusd_m1_bb_reversion_dataset.csv
+data/processed/afml/ch03/exercise_3_4_xauusd_m5_bb_reversion_dataset.csv
+```
+
+Run:
+
+```bash
+just afml-ch07-weighted-bb
+```
+
+Latest report:
+
+```text
+studies/afml/ch07/reports/2026-06-06-weighted-purged-bb-reversion.md
+```
+
+Key result:
+
+```text
+M1 weighted purged RF edge vs majority: -0.0188, positive-edge folds: 0 / 4
+M5 weighted purged RF edge vs majority: -0.0596, positive-edge folds: 0 / 4
+```
+
+Uniqueness weighting materially reduced effective train sample size:
+
+```text
+M1 mean effective train rows: 545.46 / 1252.00
+M5 mean effective train rows: 129.08 / 258.50
+```
+
+Interpretation: raw BB-reversion event counts overstate independent evidence, and the current BB meta-label baseline should not be promoted as `double-b-v2` without a second confirmation layer and economic validation.
+
 ## Notes
 
 - Prior-only expanding validation means post-test embargo usually removes no rows because future rows are not train candidates.
@@ -115,7 +153,7 @@ This reinforces the earlier Ch03 conclusion: the EMA primary + RF meta-labeling 
 
 ## Next steps
 
-1. Apply the same purged split to M5 and BB-reversion Ch03 variants.
-2. Add sample uniqueness weights from Ch04 into purged validation.
+1. Build the next `double-b-v2` candidate as BB setup + second confirmation layer instead of raw BB meta-labeling.
+2. Add economic metrics to Ch07 runs: realized return bps, cost haircut, turnover, and win/loss asymmetry.
 3. Implement combinatorial purged CV when sample size supports it.
-4. Apply Ch07 split to BRK/Kronos rolling-week experiments once multi-week live trade exports are available.
+4. Apply Ch04+Ch07 split to BRK/Kronos rolling-week experiments once multi-week live trade exports are available.

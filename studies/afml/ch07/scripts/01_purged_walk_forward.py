@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -12,6 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
 
 from deepfx_alpha_lab.validation.purged import PurgedFold, PurgedWalkForwardSplit
+from deepfx_alpha_lab.validation.weighted import WeightMode, add_interval_uniqueness_weights
 
 DEFAULT_FEATURES = (
     "side",
@@ -42,6 +44,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--embargo-days", type=float, default=1.0)
     parser.add_argument("--n-estimators", type=int, default=200)
     parser.add_argument("--random-state", type=int, default=7)
+    parser.add_argument(
+        "--weight-mode",
+        choices=["none", "symbol", "portfolio"],
+        default="none",
+        help="Ch04 uniqueness sample weights for the train fold. Use portfolio for single-symbol datasets without a symbol column.",
+    )
     return parser.parse_args()
 
 
@@ -75,7 +83,20 @@ def main() -> int:
         n_estimators=args.n_estimators,
         random_state=args.random_state,
     )
-    fold_metrics = pd.concat([naive_metrics, purged_metrics], ignore_index=True)
+    metric_frames = [naive_metrics, purged_metrics]
+    if args.weight_mode != "none":
+        weight_mode = cast(WeightMode, args.weight_mode)
+        weighted_purged_metrics = evaluate_folds(
+            dataset,
+            purged_folds,
+            feature_cols=feature_cols,
+            model_label=f"purged_expanding_weighted_{args.weight_mode}",
+            n_estimators=args.n_estimators,
+            random_state=args.random_state,
+            weight_mode=weight_mode,
+        )
+        metric_frames.append(weighted_purged_metrics)
+    fold_metrics = pd.concat(metric_frames, ignore_index=True)
     summary = summarize_fold_metrics(fold_metrics)
     report = render_report(args=args, dataset=dataset, feature_cols=feature_cols, fold_metrics=fold_metrics, summary=summary)
 
@@ -139,6 +160,7 @@ def evaluate_folds(
     model_label: str,
     n_estimators: int,
     random_state: int,
+    weight_mode: WeightMode = "none",
 ) -> pd.DataFrame:
     rows: list[dict[str, object]] = []
     for fold_idx, fold in enumerate(folds):
@@ -150,16 +172,26 @@ def evaluate_folds(
         y_train = train["bin"].astype(int)
         x_test = test[feature_cols].fillna(0.0)
         y_test = test["bin"].astype(int)
-        majority = int(y_train.mean() >= 0.5)
+        train_weighted = add_interval_uniqueness_weights(train, mode=weight_mode) if weight_mode != "none" else None
+        sample_weight = train_weighted["sample_weight"].astype(float).to_numpy() if train_weighted is not None else None
+        effective_train_rows = float(sample_weight.sum()) if sample_weight is not None else float(len(train))
+        if sample_weight is not None:
+            weighted_positive_rate = float(np.average(y_train, weights=sample_weight))
+            majority = int(weighted_positive_rate >= 0.5)
+        else:
+            majority = int(y_train.mean() >= 0.5)
         majority_pred = np.full(len(y_test), majority)
         rf = RandomForestClassifier(n_estimators=n_estimators, random_state=random_state + fold_idx, class_weight="balanced_subsample")
-        rf.fit(x_train, y_train)
+        fit_kwargs = {"sample_weight": sample_weight} if sample_weight is not None else {}
+        rf.fit(x_train, y_train, **fit_kwargs)
         pred = rf.predict(x_test)
         proba = rf.predict_proba(x_test)[:, 1] if len(rf.classes_) > 1 else np.full(len(y_test), float(rf.classes_[0]))
         row = {
             "model": model_label,
             "fold": fold.label,
             "train_rows": int(len(train)),
+            "effective_train_rows": effective_train_rows,
+            "mean_train_sample_weight": float(effective_train_rows / len(train)) if len(train) else np.nan,
             "test_rows": int(len(test)),
             "candidate_train_rows": int(fold.diagnostics.get("candidate_train_rows", len(train))),
             "purged_overlap_rows": int(fold.diagnostics.get("purged_overlap_rows", 0)),
@@ -183,6 +215,8 @@ def summarize_fold_metrics(fold_metrics: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
     metric_cols = [
         "train_rows",
+        "effective_train_rows",
+        "mean_train_sample_weight",
         "test_rows",
         "candidate_train_rows",
         "purged_overlap_rows",
@@ -219,6 +253,7 @@ def render_report(*, args: argparse.Namespace, dataset: pd.DataFrame, feature_co
         f"- Rows: {len(dataset)}",
         f"- Features: {', '.join(feature_cols)}",
         f"- Embargo days: {args.embargo_days}",
+        f"- Ch04 train sample-weight mode: `{args.weight_mode}`",
         "",
         "## Summary",
         "",

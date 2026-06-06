@@ -161,3 +161,12 @@ afml-mtf-sweep-clean:
     rm -f data/processed/afml/ch03/mtf_ohlc_barrier_sweep_*.csv
     rm -f data/processed/afml/ch03/mtf_ohlc_barrier_sweep_*.json
     rm -rf data/processed/afml/ch03/kronos
+
+afml-ch04-brk-symbol:
+    {{python}} studies/afml/ch04-sample-weights/scripts/01_trade_uniqueness.py --events data/processed/brk_kronos_disagreement/20260531_20260606/study/aligned_trades.csv --out-dir data/processed/afml/ch04/brk_uniqueness_symbol_20260531_20260606 --window-minutes 120 --family BRK --pool symbol
+
+afml-ch04-brk-portfolio:
+    {{python}} studies/afml/ch04-sample-weights/scripts/01_trade_uniqueness.py --events data/processed/brk_kronos_disagreement/20260531_20260606/study/aligned_trades.csv --out-dir data/processed/afml/ch04/brk_uniqueness_portfolio_20260531_20260606 --window-minutes 120 --family BRK --pool portfolio
+
+afml-ch04-clean:
+    rm -rf data/processed/afml/ch04

@@ -170,3 +170,9 @@ afml-ch04-brk-portfolio:
 
 afml-ch04-clean:
     rm -rf data/processed/afml/ch04
+
+afml-ch07-purged-xauusd-m1:
+    {{python}} studies/afml/ch07/scripts/01_purged_walk_forward.py --dataset data/processed/afml/ch03/exercise_3_4_xauusd_m1_dataset.csv --out-dir data/processed/afml/ch07/purged_xauusd_m1_202601_202605 --start 2026-01-01T00:00:00Z --end 2026-06-01T00:00:00Z --embargo-days 1
+
+afml-ch07-clean:
+    rm -rf data/processed/afml/ch07

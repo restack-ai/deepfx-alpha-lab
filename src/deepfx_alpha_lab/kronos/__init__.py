@@ -12,10 +12,16 @@ from deepfx_alpha_lab.kronos.encoder import (
     pool_sequence_embeddings,
     reconstruct_window_timestamps,
 )
+from deepfx_alpha_lab.kronos.shadow_conflicts import (
+    ShadowConflictSummary,
+    apply_shadow_conflict_policy,
+)
 
 __all__ = [
     "KronosEncoderConfig",
     "KronosLabelDataset",
+    "ShadowConflictSummary",
+    "apply_shadow_conflict_policy",
     "build_frozen_kronos_embeddings",
     "build_kronos_label_dataset",
     "build_kronos_model_input",
